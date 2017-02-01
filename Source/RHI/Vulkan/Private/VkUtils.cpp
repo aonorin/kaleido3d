@@ -137,10 +137,11 @@ void CommandAllocator::Initialize()
 
 void CommandAllocator::Destroy()
 {
-	if (VK_NULL_HANDLE == m_Pool)
+	if (VK_NULL_HANDLE == m_Pool || !GetRawDevice() )
 	{
 		return;
 	}
+	VKLOG(Info, "CommandAllocator destroy.. -- %d. (device:0x%0x)", m_Pool, GetRawDevice());
 	vkDestroyCommandPool(GetRawDevice(), m_Pool, nullptr);
 	m_Pool = VK_NULL_HANDLE;
 }
