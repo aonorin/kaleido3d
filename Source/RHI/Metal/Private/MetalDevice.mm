@@ -69,9 +69,9 @@ Device::NewSampler(const rhi::SamplerState&)
 }
 
 rhi::PipelineStateObjectRef
-Device::NewPipelineState(rhi::PipelineDesc const&,rhi::PipelineLayoutRef,rhi::EPipelineType)
+Device::NewPipelineState(rhi::PipelineDesc const& desc,rhi::PipelineLayoutRef,rhi::EPipelineType type)
 {
-    return nullptr;
+    return k3d::MakeShared<PipelineState>(m_Device, desc, type);
 }
 
 rhi::PipelineLayoutRef
@@ -261,7 +261,38 @@ void RenderViewport::PrepareNextFrame()
 }
 
 rhi::RenderTargetRef
+RenderViewport::GetCurrentBackRenderTarget()
+{
+    return k3d::MakeShared<RenderTarget>(m_RenderPassDescriptor, m_CurrentDrawable.texture);
+}
+
+rhi::RenderTargetRef
 Device::NewRenderTarget(rhi::RenderTargetLayout const&)
+{
+    return nullptr;
+}
+
+RenderTarget::RenderTarget(MTLRenderPassDescriptor* rpd, id<MTLTexture> color)
+: m_RenderPassDescriptor(rpd)
+, m_ColorTexture(color)
+{
+}
+
+RenderTarget::~RenderTarget()
+{
+}
+
+void RenderTarget::SetClearColor(kMath::Vec4f clrColor)
+{
+    
+}
+
+void RenderTarget::SetClearDepthStencil(float depth, uint32 stencil)
+{
+    
+}
+
+rhi::GpuResourceRef RenderTarget::GetBackBuffer()
 {
     return nullptr;
 }

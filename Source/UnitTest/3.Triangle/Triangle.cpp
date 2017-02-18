@@ -166,7 +166,7 @@ void TriangleMesh::Upload()
 	rhi::ResourceDesc stageDesc;
 	stageDesc.ViewType = rhi::EGpuMemViewType::EGVT_Undefined;
 	stageDesc.CreationFlag = rhi::EGpuResourceCreationFlag::EGRCF_TransferSrc;
-	stageDesc.Flag = (rhi::EGpuResourceAccessFlag) (rhi::EGpuResourceAccessFlag::EGRAF_HostCoherent | rhi::EGpuResourceAccessFlag::EGRAF_HostVisible);
+	stageDesc.Flag = rhi::EGpuResourceAccessFlag::EGRAF_HostCoherent | rhi::EGpuResourceAccessFlag::EGRAF_HostVisible;
 	stageDesc.Size = m_szVBuf;
 	auto vStageBuf = m_pDevice->NewGpuResource(stageDesc);
 	void * ptr = vStageBuf->Map(0, m_szVBuf);
@@ -278,8 +278,11 @@ void VkTriangleUnitTest::PreparePipeline()
 	compile("asset://Test/triangle.frag", rhi::ES_Fragment, fragSh);
 	rhi::PipelineLayoutDesc ppldesc = vertSh.BindingTable;
 	m_pl = pDevice->NewPipelineLayout(ppldesc);
-	auto descriptor = m_pl->GetDescriptorSet();
-	descriptor->Update(0, m_ConstBuffer);
+    if(m_pl)
+    {
+        auto descriptor = m_pl->GetDescriptorSet();
+        descriptor->Update(0, m_ConstBuffer);
+    }
 	auto attrib = vertSh.Attributes;
 	rhi::PipelineDesc desc;
 	desc.Shaders[rhi::ES_Vertex] = vertSh;

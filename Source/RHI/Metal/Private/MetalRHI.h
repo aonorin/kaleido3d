@@ -77,8 +77,9 @@ inline rhi::DeviceRef DeviceAdapter::GetDevice()
 class PipelineState : public rhi::IPipelineStateObject
 {
     friend class Device;
+    friend class CommandContext;
 public:
-    PipelineState();
+    PipelineState(id<MTLDevice> pDevice, rhi::PipelineDesc const & desc, rhi::EPipelineType const& type);
     ~PipelineState();
 
     rhi::EPipelineType GetType () override { return m_Type; }
@@ -96,11 +97,28 @@ public:
     void Finalize() override;
     
 private:
+    void InitPSO(rhi::PipelineDesc const & desc);
+    void AssignShader(rhi::ShaderBundle const& shaderBundle);
+    
     rhi::EPipelineType              m_Type;
     id<MTLDevice>                   m_Device;
+    
     id<MTLComputePipelineState>     m_ComputePipelineState;
+    MTLComputePipelineDescriptor*   m_ComputePipelineDesc;
+    
     id<MTLRenderPipelineState>      m_RenderPipelineState;
     MTLRenderPipelineDescriptor*    m_RenderPipelineDesc;
+    
+    MTLDepthStencilDescriptor*      m_DepthStencilDesc;
+    MTLCullMode                     m_CullMode;
+    float                           m_DepthBias;
+    float                           m_DepthBiasClamp;
+    
+    
+    
+    MTLRenderPipelineReflection*    m_RenderReflection;
+    MTLComputePipelineReflection*   m_ComputeReflection;
+    
     id<MTLDepthStencilState>        m_DepthStencilState;
 };
 
@@ -118,6 +136,8 @@ public:
     void TransitionResourceBarrier(rhi::GpuResourceRef resource, /*EPipelineStage stage,*/ rhi::EResourceState dstState) override {}
     void Execute(bool Wait) override;
     void Reset() override;
+    
+    void Begin() override;
     
     void ClearColorBuffer(rhi::GpuResourceRef, kMath::Vec4f const&) override {}
     void ClearDepthBuffer(rhi::IDepthBuffer*) override {}
@@ -139,6 +159,10 @@ public:
     
     void Dispatch(uint32 X = 1, uint32 Y =1, uint32 Z = 1) override;
     
+    void ExecuteBundle(rhi::ICommandContext*) override {}
+    
+    void End() override;
+    
 protected:
     
 private:
@@ -147,8 +171,10 @@ private:
     MTLPrimitiveType                m_CurPrimType;
     id<MTLComputeCommandEncoder>    m_ComputeEncoder;
     id<MTLRenderCommandEncoder>     m_RenderEncoder;
-    
+    id <MTLParallelRenderCommandEncoder> m_ParallelRenderEncoder;
     id<MTLCommandBuffer>            m_CmdBuffer;
+    
+    id<MTLBuffer>                   m_tmpVertexBuffer;
 };
 
 class RenderViewport : public rhi::IRenderViewport
@@ -157,41 +183,58 @@ public:
     RenderViewport(CAMetalLayer * mtlLayer = nil);
     ~RenderViewport() override;
     
-    bool				InitViewport(void *windowHandle,
-                                     rhi::IDevice * pDevice,
-                                     rhi::GfxSetting &
-                        ) override;
+    bool                    InitViewport(void *windowHandle, rhi::IDevice * pDevice, rhi::GfxSetting &) override;
+    void                    PrepareNextFrame() override;
+    bool                    Present(bool vSync) override { return false; }
     
-    void				PrepareNextFrame() override;
-    bool				Present(bool vSync) override { return false; }
+    rhi::RenderTargetRef    GetRenderTarget(uint32 index) override { return nullptr; }
     
-    rhi::RenderTargetRef     GetRenderTarget(uint32 index) override { return nullptr; }
+    rhi::RenderTargetRef    GetCurrentBackRenderTarget() override;
+    uint32                  GetSwapChainCount()override { return 0; }
+    uint32                  GetSwapChainIndex()override { return 0; }
     
-    rhi::RenderTargetRef GetCurrentBackRenderTarget() override { return nullptr; }
-    uint32				GetSwapChainCount()override { return 0; }
-    uint32				GetSwapChainIndex()override { return 0; }
+    uint32                  GetWidth() const override { return m_Width; }
+    uint32                  GetHeight() const override { return m_Height; }
     
-    uint32				GetWidth() const override { return m_Width; }
-    uint32				GetHeight() const override { return m_Height; }
-    
-    friend class        Device;
-    friend class        CommandContext;
+    friend class            Device;
+    friend class            CommandContext;
 private:
     
-    CAMetalLayer *      m_Layer;
-    id<CAMetalDrawable> m_CurrentDrawable;
-    MTLRenderPassDescriptor *m_RenderPassDescriptor;
-    id<MTLTexture>      m_DepthTex;
-    uint32              m_Width;
-    uint32              m_Height;
+    CAMetalLayer *          m_Layer;
+    id<CAMetalDrawable>     m_CurrentDrawable;
+    MTLRenderPassDescriptor*m_RenderPassDescriptor;
+    id<MTLTexture>          m_DepthTex;
+    uint32                  m_Width;
+    uint32                  m_Height;
 };
 
 class RenderTarget : public rhi::IRenderTarget
 {
 public:
+    RenderTarget() {}
+    RenderTarget(MTLRenderPassDescriptor* rpd, id<MTLTexture> color);
+    ~RenderTarget() override;
+    
+    void                SetClearColor(kMath::Vec4f clrColor) override;
+    void                SetClearDepthStencil(float depth, uint32 stencil) override;
+    rhi::GpuResourceRef	GetBackBuffer() override;
+    
+    friend class        CommandContext;
+private:
+    MTLRenderPassDescriptor*m_RenderPassDescriptor = nil;
+    id<MTLTexture>          m_ColorTexture;
+};
+
+class Sampler : public rhi::ISampler
+{
+public:
+    explicit Sampler(rhi::SamplerState const & state);
+    ~Sampler() override;
+    
+    rhi::SamplerState       GetSamplerDesc() const override;
     
 private:
-    
+    id <MTLSamplerState>    m_SampleState;
 };
 
 NS_K3D_METAL_END

@@ -177,7 +177,7 @@ void CubeMesh::Upload()
 	rhi::ResourceDesc stageDesc;
 	stageDesc.ViewType = rhi::EGpuMemViewType::EGVT_Undefined;
 	stageDesc.CreationFlag = rhi::EGpuResourceCreationFlag::EGRCF_TransferSrc;
-	stageDesc.Flag = (rhi::EGpuResourceAccessFlag) (rhi::EGpuResourceAccessFlag::EGRAF_HostCoherent | rhi::EGpuResourceAccessFlag::EGRAF_HostVisible);
+	stageDesc.Flag = rhi::EGpuResourceAccessFlag::EGRAF_HostCoherent | rhi::EGpuResourceAccessFlag::EGRAF_HostVisible;
 	stageDesc.Size = m_szVBuf;
 	auto vStageBuf = m_pDevice->NewGpuResource(stageDesc);
 	void * ptr = vStageBuf->Map(0, m_szVBuf);
@@ -254,7 +254,7 @@ rhi::GpuResourceRef TCubeUnitTest::CreateStageBuffer(uint64 size)
 	rhi::ResourceDesc stageDesc;
 	stageDesc.ViewType = rhi::EGpuMemViewType::EGVT_Undefined;
 	stageDesc.CreationFlag = rhi::EGpuResourceCreationFlag::EGRCF_TransferSrc;
-	stageDesc.Flag = (rhi::EGpuResourceAccessFlag) (rhi::EGpuResourceAccessFlag::EGRAF_HostCoherent | rhi::EGpuResourceAccessFlag::EGRAF_HostVisible);
+	stageDesc.Flag = rhi::EGpuResourceAccessFlag::EGRAF_HostCoherent | rhi::EGpuResourceAccessFlag::EGRAF_HostVisible;
 	stageDesc.Size = size;
 	return m_RenderContext.GetDevice()->NewGpuResource(stageDesc);
 }

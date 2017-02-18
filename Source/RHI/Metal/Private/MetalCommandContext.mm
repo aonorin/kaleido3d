@@ -1,4 +1,5 @@
 #include "Kaleido3D.h"
+#include "Math/IK.hpp"
 #include "MetalRHI.h"
 #include "MetalEnums.h"
 
@@ -18,6 +19,18 @@ CommandContext::~CommandContext()
 void CommandContext::Detach(rhi::IDevice *)
 {
     
+}
+
+void CommandContext::Begin()
+{
+    if(m_CommandType == rhi::ECMD_Compute)
+    {
+        m_ComputeEncoder = [m_CmdBuffer computeCommandEncoder];
+    }
+    else if(m_CommandType == rhi::ECMD_Bundle)
+    {
+        m_ParallelRenderEncoder = [m_CmdBuffer parallelRenderCommandEncoderWithDescriptor:m_RenderpassDesc];
+    }
 }
 
 void CommandContext::CopyTexture(const rhi::TextureCopyLocation& Dest, const rhi::TextureCopyLocation& Src)
@@ -41,12 +54,13 @@ void CommandContext::Reset()
 
 void CommandContext::BeginRendering()
 {
-    m_RenderEncoder = [m_CmdBuffer renderCommandEncoderWithDescriptor:m_RenderpassDesc];
 }
 
 void CommandContext::SetRenderTarget(rhi::RenderTargetRef pRenderTarget)
 {
-    
+    auto pRt = k3d::StaticPointerCast<RenderTarget>(pRenderTarget);
+    m_RenderpassDesc = pRt->m_RenderPassDescriptor;
+    m_RenderEncoder = [m_CmdBuffer renderCommandEncoderWithDescriptor:m_RenderpassDesc];
 }
 
 void CommandContext::SetIndexBuffer(const rhi::IndexBufferView& IBView)
@@ -56,12 +70,27 @@ void CommandContext::SetIndexBuffer(const rhi::IndexBufferView& IBView)
 
 void CommandContext::SetVertexBuffer(uint32 Slot, const rhi::VertexBufferView& VBView)
 {
-    
+    //[m_RenderEncoder setVertexBuffer:(nullable id<MTLBuffer>) offset:0 atIndex:Slot];
 }
 
-void CommandContext::SetPipelineState(uint32 HashCode, rhi::PipelineStateObjectRef PipelineState)
+void CommandContext::SetPipelineState(uint32 HashCode, rhi::PipelineStateObjectRef pPipelineState)
 {
-    
+    if(!pPipelineState)
+    {
+        MTLLOGE("CommandContext::setPipelineState pPipelineState==null!");
+        return;
+    }
+    auto mtlPs = StaticPointerCast<PipelineState>(pPipelineState);
+    if(pPipelineState->GetType() == rhi::EPSO_Graphics)
+    {
+        [m_RenderEncoder setRenderPipelineState:    mtlPs->m_RenderPipelineState];
+        [m_RenderEncoder setDepthStencilState:      mtlPs->m_DepthStencilState];
+        [m_RenderEncoder setCullMode:               mtlPs->m_CullMode];
+    }
+    else
+    {
+        [m_ComputeEncoder setComputePipelineState:  mtlPs->m_ComputePipelineState];
+    }
 }
 
 void CommandContext::SetViewport(const rhi::ViewportDesc & vpDesc)
@@ -78,13 +107,19 @@ void CommandContext::SetPrimitiveType(rhi::EPrimitiveType Type)
 void CommandContext::DrawInstanced(rhi::DrawInstancedParam param)
 {
     [m_RenderEncoder drawPrimitives:m_CurPrimType
-                        vertexStart:param.StartVertexLocation vertexCount:param.VertexCountPerInstance
-                        instanceCount:param.InstanceCount baseInstance:param.StartInstanceLocation];
+                        vertexStart:param.StartVertexLocation
+                        vertexCount:param.VertexCountPerInstance
+                      instanceCount:param.InstanceCount
+                       baseInstance:param.StartInstanceLocation];
 }
 
 void CommandContext::DrawIndexedInstanced(rhi::DrawIndexedInstancedParam param)
 {
-//    [m_RenderEncoder drawIndexedPrimitives:m_CurPrimType indexCount:param.IndexCountPerInstance indexType:(MTLIndexType) indexBuffer:(nonnull id<MTLBuffer>) indexBufferOffset:(NSUInteger)]
+    [m_RenderEncoder drawIndexedPrimitives:m_CurPrimType
+                                indexCount:param.IndexCountPerInstance
+                                 indexType:MTLIndexTypeUInt32
+                               indexBuffer:m_tmpVertexBuffer
+                         indexBufferOffset:param.StartIndexLocation];
 }
 
 void CommandContext::EndRendering()
@@ -95,6 +130,11 @@ void CommandContext::EndRendering()
 void CommandContext::Dispatch(uint32 x, uint32 y, uint32 z)
 {
     [m_ComputeEncoder dispatchThreadgroups:MTLSizeMake(x, y, z) threadsPerThreadgroup:MTLSizeMake(x, y, z)];
+}
+
+void CommandContext::End()
+{
+    
 }
 
 void CommandContext::PresentInViewport(rhi::RenderViewportRef rvp)

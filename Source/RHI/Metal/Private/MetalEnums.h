@@ -127,6 +127,20 @@ namespace
      WriteZero,
      WriteAll,
      */
+    
+    /*enum EVertexFormat
+     {
+     EVF_Float1x32,
+     EVF_Float2x32,
+     EVF_Float3x32,
+     EVF_Float4x32,
+     */
+    MTLVertexFormat g_VertexFormats[] = {
+        MTLVertexFormatFloat,
+        MTLVertexFormatFloat2,
+        MTLVertexFormatFloat3,
+        MTLVertexFormatFloat4,
+    };
 }
 
 NS_K3D_METAL_END

@@ -8,7 +8,7 @@ goto BUILD_BY_CMAKE
 
 :CHECK_DEPENDENCIES
 echo Checkout Dependencies From Github
-git clone https://github.com/Tomicyo/kaleido3d_dep_prebuilt.git -b win64_debug Source\ThirdParty_Prebuilt\Win64_Debug
+git clone https://github.com/Tomicyo/kaleido3d_dep_prebuilt.git -b win64_debug Source\ThirdParty_Prebuilt\Win64\Debug
 goto BUILD_BY_CMAKE
 
 

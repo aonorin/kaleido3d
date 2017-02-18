@@ -516,6 +516,11 @@ namespace rhi
 		EGRAF_HostCached = 0x1 << 5,
 	};
 
+	inline EGpuResourceAccessFlag operator | (EGpuResourceAccessFlag const& lhs, EGpuResourceAccessFlag const& rhs)
+	{
+		return EGpuResourceAccessFlag(uint32(lhs) | uint32(rhs));
+	}
+
 	enum EGpuResourceCreationFlag
 	{
 		EGRCF_Dynamic = 0,
@@ -523,6 +528,11 @@ namespace rhi
 		EGRCF_TransferSrc = 2,
 		EGRCF_TransferDst = 4
 	};
+
+	inline EGpuResourceCreationFlag operator | (EGpuResourceCreationFlag const& lhs, EGpuResourceCreationFlag const& rhs)
+	{
+		return EGpuResourceCreationFlag(uint32(lhs) | uint32(rhs));
+	}
 
 	/**
 	 * Format, Width, Height, Depth, MipLevel, Layers
@@ -577,6 +587,11 @@ namespace rhi
 		ETAF_STENCIL = 1<<2,
 		ETAF_METADATA = 1<<3,
 	};
+
+	inline ETextureAspectFlag operator|(ETextureAspectFlag const& lhs, ETextureAspectFlag const& rhs)
+	{
+		return ETextureAspectFlag(uint32(lhs) | uint32(rhs));
+	}
 
 	/*same as VkImageSubresource */
 	struct TextureResourceSpec
