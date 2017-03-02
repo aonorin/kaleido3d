@@ -52,7 +52,7 @@ protected:
 private:
 
 	rhi::IShCompiler::Ptr				m_Compiler;
-	std::unique_ptr<CubeMesh>			m_TriMesh;
+	std::unique_ptr<CubeMesh>			m_CubeMesh;
 
 	rhi::GpuResourceRef					m_ConstBuffer;
 	TextureObject*						m_Texture;
@@ -87,6 +87,12 @@ public:
 		m_VertDecs[0] = { rhi::EVF_Float3x32, sizeof(Vertex), 0,0,0 };					/* Position */
 		m_VertDecs[1] = { rhi::EVF_Float4x32, sizeof(Vertex), 1,sizeof(float)*3,0 };	/* Color */
 		m_VertDecs[2] = { rhi::EVF_Float2x32, sizeof(Vertex), 2,sizeof(float)*7,0 };	/* UV */
+
+		m_IAState.Attribs[0] = {rhi::EVF_Float3x32, 0, 					0};
+		m_IAState.Attribs[1] = {rhi::EVF_Float4x32, sizeof(float)*3, 	0};
+		m_IAState.Attribs[2] = {rhi::EVF_Float2x32, sizeof(float)*7, 	0};
+
+		m_IAState.Layouts[0] = {rhi::EVIR_PerVertex, sizeof(Vertex)};
 	}
 
 	~CubeMesh()
@@ -94,6 +100,8 @@ public:
 	}
 
 	const rhi::VertexDeclaration * GetVertDec() const { return m_VertDecs; }
+
+	const rhi::VertexInputState & GetInputState() const { return m_IAState;}
 
 	void Upload();
 
@@ -106,7 +114,8 @@ public:
 	
 private:
 
-	rhi::VertexDeclaration m_VertDecs[3];
+	rhi::VertexDeclaration 	m_VertDecs[3];
+	rhi::VertexInputState 	m_IAState;
 
 	uint64 m_szVBuf;
 
@@ -285,8 +294,8 @@ void TCubeUnitTest::LoadTexture()
 void TCubeUnitTest::PrepareResource()
 {
 	KLOG(Info, Test, __K3D_FUNC__);
-	m_TriMesh = std::make_unique<CubeMesh>(m_RenderContext.GetDevice());
-	m_TriMesh->Upload();
+	m_CubeMesh = std::make_unique<CubeMesh>(m_RenderContext.GetDevice());
+	m_CubeMesh->Upload();
 	LoadTexture();
 	auto pDevice = m_RenderContext.GetDevice();
 	rhi::ResourceDesc desc;
@@ -314,7 +323,8 @@ void TCubeUnitTest::PreparePipeline()
 	rhi::PipelineDesc desc;
 	desc.Shaders[rhi::ES_Vertex] = vertSh;
 	desc.Shaders[rhi::ES_Fragment] = fragSh;
-	desc.VertexLayout.Append(m_TriMesh->GetVertDec()[0]).Append(m_TriMesh->GetVertDec()[1]).Append(m_TriMesh->GetVertDec()[2]);
+	desc.InputState = m_CubeMesh->GetInputState();
+	desc.VertexLayout.Append(m_CubeMesh->GetVertDec()[0]).Append(m_CubeMesh->GetVertDec()[1]).Append(m_CubeMesh->GetVertDec()[2]);
 	m_pPso = pDevice->NewPipelineState(desc, m_pl, rhi::EPSO_Graphics);
 
 }
@@ -335,7 +345,7 @@ void TCubeUnitTest::PrepareCommandBuffer()
 		gfxCmd->SetScissorRects(1, &rect);
 		gfxCmd->SetViewport(rhi::ViewportDesc(1.f*m_Viewport->GetWidth(), 1.f*m_Viewport->GetHeight()));
 		gfxCmd->SetPipelineState(0, m_pPso);
-		gfxCmd->SetVertexBuffer(0, m_TriMesh->VBO());
+		gfxCmd->SetVertexBuffer(0, m_CubeMesh->VBO());
 		gfxCmd->DrawInstanced(rhi::DrawInstancedParam(36, 1));
 		gfxCmd->EndRendering();
 		gfxCmd->TransitionResourceBarrier(pRT->GetBackBuffer(), rhi::ERS_Present);
@@ -355,7 +365,7 @@ void TCubeUnitTest::OnDestroy()
 		m_Texture = nullptr;
 	}
 
-	m_TriMesh->~CubeMesh();
+	m_CubeMesh->~CubeMesh();
 	m_RenderContext.Destroy();
 }
 

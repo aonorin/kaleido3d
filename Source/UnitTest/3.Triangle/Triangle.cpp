@@ -119,6 +119,11 @@ public:
 		m_szIBuf = sizeof(uint32)*m_IndexBuffer.size();
 		m_VertDecs[0] = { rhi::EVF_Float3x32, sizeof(Vertex), 0,0,0 };					/* Position */
 		m_VertDecs[1] = { rhi::EVF_Float3x32, sizeof(Vertex), 1,sizeof(float)*3,0 };	/* Color */
+
+		m_IAState.Attribs[0] = {rhi::EVF_Float3x32, 0, 					0};
+		m_IAState.Attribs[1] = {rhi::EVF_Float3x32, sizeof(float)*3, 	0};
+
+		m_IAState.Layouts[0] = {rhi::EVIR_PerVertex, sizeof(Vertex)};
 	}
 
 	~TriangleMesh()
@@ -126,6 +131,8 @@ public:
 	}
 
 	const rhi::VertexDeclaration * GetVertDec() const { return m_VertDecs; }
+	const rhi::VertexInputState & GetInputState() const { return m_IAState;}
+
 
 	void Upload();
 
@@ -142,6 +149,7 @@ public:
 private:
 
 	rhi::VertexDeclaration m_VertDecs[2];
+	rhi::VertexInputState m_IAState;
 
 	uint64 m_szVBuf;
 	uint64 m_szIBuf;
@@ -288,6 +296,7 @@ void VkTriangleUnitTest::PreparePipeline()
 	desc.Shaders[rhi::ES_Vertex] = vertSh;
 	desc.Shaders[rhi::ES_Fragment] = fragSh;
 	desc.VertexLayout.Append(m_TriMesh->GetVertDec()[0]).Append(m_TriMesh->GetVertDec()[1]);
+	desc.InputState = m_TriMesh->GetInputState();
 	m_pPso = pDevice->NewPipelineState(desc, m_pl, rhi::EPSO_Graphics);
 	//m_pPso->LoadPSO("triagle.psocache");
 }

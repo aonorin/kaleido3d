@@ -9,15 +9,22 @@ Buffer::Buffer(Device* device, rhi::ResourceDesc const & desc)
 {
     m_Buf = [m_Device->GetDevice()
              newBufferWithLength:desc.Size
-             options:MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeShared];
+             options: MTLResourceStorageModeManaged];
 }
 
 Buffer::~Buffer()
 {
+    if(m_Buf)
+    {
+        [m_Buf release];
+        m_Buf = nil;
+    }
 }
 
 void * Buffer::Map(uint64 start, uint64 size)
 {
+    m_MapRange.location = start;
+    m_MapRange.length = size;
     return [m_Buf contents];
 }
 
@@ -30,7 +37,7 @@ void Buffer::UnMap()
 
 uint64 Buffer::GetResourceLocation() const
 {
-    return 0;
+    return (uint64)m_Buf;
 }
 
 rhi::ResourceDesc Buffer::GetResourceDesc() const

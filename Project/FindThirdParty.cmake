@@ -37,7 +37,7 @@ unset(FREETYPE2_INCLUDE_DIR CACHE)
 
 set(FREETYPE2_LIBRARY freetype)
 set(GLSLANG_LIBRARIES glslang HLSL OGLCompiler OSDependent SPIRV SPVRemapper)
-set(SPIRV2CROSS_LIBRARY Spirv2Cross)
+set(SPIRV2CROSS_LIBRARY spirv-cross-core spirv-cross-msl spirv-cross-glsl)
 
 if(WIN32)
     unset(DXSDK_INCLUDE_DIR CACHE)

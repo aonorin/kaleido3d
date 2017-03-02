@@ -52,7 +52,7 @@ Device::Create(rhi::IDeviceAdapter *adapter, bool withDebug)
 rhi::CommandContextRef
 Device::NewCommandContext(rhi::ECommandType Type)
 {
-    auto CmdBuf = [m_CommandQueue commandBuffer];
+    id<MTLCommandBuffer> CmdBuf = [m_CommandQueue commandBuffer];
     return k3d::MakeShared<CommandContext>(Type, CmdBuf);
 }
 
@@ -211,6 +211,7 @@ bool RenderViewport::InitViewport(void *windowHandle, rhi::IDevice *pDevice, rhi
             desc.textureType = /*(_sampleCount > 1) ? MTLTextureType2DMultisample :*/ MTLTextureType2D;
 #if K3DPLATFORM_OS_MAC
             desc.resourceOptions = MTLResourceStorageModePrivate;
+            desc.usage = MTLTextureUsageRenderTarget;
 #endif
             //desc.sampleCount = _sampleCount;
             

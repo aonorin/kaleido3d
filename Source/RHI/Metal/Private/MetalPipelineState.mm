@@ -5,6 +5,21 @@
 
 NS_K3D_METAL_BEGIN
 
+MTLPrimitiveTopologyClass ConvertPrimTopology(rhi::EPrimitiveType const& type)
+{
+    switch(type)
+    {
+        case rhi::EPT_Triangles:
+        case rhi::EPT_TriangleStrip:
+            return MTLPrimitiveTopologyClassTriangle;
+        case rhi::EPT_Points:
+            return MTLPrimitiveTopologyClassPoint;
+        case rhi::EPT_Lines:
+            return MTLPrimitiveTopologyClassLine;
+    }
+    return MTLPrimitiveTopologyClassUnspecified;
+}
+
 PipelineState::PipelineState(id<MTLDevice> pDevice, rhi::PipelineDesc const & desc, rhi::EPipelineType const& type)
 : m_DepthStencilDesc(nil)
 , m_RenderPipelineDesc(nil)
@@ -45,10 +60,13 @@ void PipelineState::InitPSO(const rhi::PipelineDesc &desc)
         m_DepthBias = desc.Rasterizer.DepthBias;
         m_DepthBiasClamp = desc.Rasterizer.DepthBiasClamp;
         m_CullMode = g_CullMode[desc.Rasterizer.CullMode];
-//        m_RenderPipelineDesc.inputPrimitiveTopology = g_PrimitiveType[desc.PrimitiveTopology];
+        m_RenderPipelineDesc.inputPrimitiveTopology = ConvertPrimTopology(desc.PrimitiveTopology);
+        m_PrimitiveType = g_PrimitiveType[desc.PrimitiveTopology];
         // blending setup
         MTLRenderPipelineColorAttachmentDescriptor *renderbufferAttachment = m_RenderPipelineDesc.colorAttachments[0];
-        renderbufferAttachment.pixelFormat = MTLPixelFormatRGBA32Float;
+        
+        renderbufferAttachment.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        
         renderbufferAttachment.blendingEnabled = desc.Blend.Enable?YES:NO;
         renderbufferAttachment.rgbBlendOperation = g_BlendOperation[desc.Blend.Op];
         renderbufferAttachment.alphaBlendOperation = g_BlendOperation[desc.Blend.BlendAlphaOp];
@@ -56,23 +74,34 @@ void PipelineState::InitPSO(const rhi::PipelineDesc &desc)
         renderbufferAttachment.sourceAlphaBlendFactor = g_BlendFactor[desc.Blend.SrcBlendAlpha];
         renderbufferAttachment.destinationRGBBlendFactor = g_BlendFactor[desc.Blend.Dest];
         renderbufferAttachment.destinationAlphaBlendFactor = g_BlendFactor[desc.Blend.DestBlendAlpha];
-
+        
+        m_RenderPipelineDesc.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+        
+        
         // vertex descriptor setup
-        for(uint32 i = 0; i<desc.VertexLayout.Count(); i++)
+        for(uint32 i = 0; i<rhi::VertexInputState::kMaxVertexBindings; i++)
         {
-            auto vertLayout = desc.VertexLayout[i];
-            m_RenderPipelineDesc.vertexDescriptor.attributes[i].format = g_VertexFormats[vertLayout.Format];
-            m_RenderPipelineDesc.vertexDescriptor.attributes[i].offset = vertLayout.OffSet;
-            m_RenderPipelineDesc.vertexDescriptor.attributes[i].bufferIndex = vertLayout.AttributeIndex;
-            
-            m_RenderPipelineDesc.vertexDescriptor.layouts[i].stride = vertLayout.Stride;
-            m_RenderPipelineDesc.vertexDescriptor.layouts[i].stepRate = 1;
-            m_RenderPipelineDesc.vertexDescriptor.layouts[i].stepFunction = MTLVertexStepFunctionPerVertex;
+            auto attrib = desc.InputState.Attribs[i];
+            if(attrib.Slot==rhi::VertexInputState::kInvalidValue)
+                break;
+            m_RenderPipelineDesc.vertexDescriptor.attributes[i].format = g_VertexFormats[attrib.Format];
+            m_RenderPipelineDesc.vertexDescriptor.attributes[i].offset = attrib.OffSet;
+            m_RenderPipelineDesc.vertexDescriptor.attributes[i].bufferIndex = attrib.Slot;
         }
+        
+        for(uint32 i = 0; i<rhi::VertexInputState::kMaxVertexBindings; i++)
+        {
+            auto layout = desc.InputState.Layouts[i];
+            if(layout.Stride == rhi::VertexInputState::kInvalidValue)
+                break;
+            m_RenderPipelineDesc.vertexDescriptor.layouts[i].stride = layout.Stride;
+            m_RenderPipelineDesc.vertexDescriptor.layouts[i].stepRate = 1;
+            m_RenderPipelineDesc.vertexDescriptor.layouts[i].stepFunction = g_VertexInputRates[layout.Rate];
+        }
+        
         // shader setup
         AssignShader(desc.Shaders[rhi::ES_Vertex]);
         AssignShader(desc.Shaders[rhi::ES_Fragment]);
-//        m_RenderPipelineDesc.depthAttachmentPixelFormat
     }
     else
     {
@@ -98,7 +127,7 @@ void PipelineState::AssignShader(const rhi::ShaderBundle &shaderBundle)
             {
                 MTLLOGE("Failed to AssignShader, error: %s, occured %s@%d.", [[error localizedFailureReason] UTF8String], __FILE__, __LINE__);
             }
-            NSString *entryName = [NSString stringWithFormat:@"%@%@", @"m",
+            NSString *entryName = [NSString stringWithFormat:@"%@0",
                                   [NSString stringWithUTF8String:shaderBundle.Desc.EntryFunction.CStr()]];
             id<MTLFunction> function = [lib newFunctionWithName:entryName];
             switch(shaderBundle.Desc.Stage)

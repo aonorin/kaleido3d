@@ -65,12 +65,12 @@ void CommandContext::SetRenderTarget(rhi::RenderTargetRef pRenderTarget)
 
 void CommandContext::SetIndexBuffer(const rhi::IndexBufferView& IBView)
 {
-    
+    m_TmpIndexBuffer = (id<MTLBuffer>)IBView.BufferLocation;
 }
 
 void CommandContext::SetVertexBuffer(uint32 Slot, const rhi::VertexBufferView& VBView)
 {
-    //[m_RenderEncoder setVertexBuffer:(nullable id<MTLBuffer>) offset:0 atIndex:Slot];
+    [m_RenderEncoder setVertexBuffer:(id<MTLBuffer>)VBView.BufferLocation offset:0 atIndex:Slot];
 }
 
 void CommandContext::SetPipelineState(uint32 HashCode, rhi::PipelineStateObjectRef pPipelineState)
@@ -86,6 +86,7 @@ void CommandContext::SetPipelineState(uint32 HashCode, rhi::PipelineStateObjectR
         [m_RenderEncoder setRenderPipelineState:    mtlPs->m_RenderPipelineState];
         [m_RenderEncoder setDepthStencilState:      mtlPs->m_DepthStencilState];
         [m_RenderEncoder setCullMode:               mtlPs->m_CullMode];
+        m_CurPrimType = mtlPs->m_PrimitiveType;
     }
     else
     {
@@ -118,7 +119,7 @@ void CommandContext::DrawIndexedInstanced(rhi::DrawIndexedInstancedParam param)
     [m_RenderEncoder drawIndexedPrimitives:m_CurPrimType
                                 indexCount:param.IndexCountPerInstance
                                  indexType:MTLIndexTypeUInt32
-                               indexBuffer:m_tmpVertexBuffer
+                               indexBuffer:m_TmpIndexBuffer
                          indexBufferOffset:param.StartIndexLocation];
 }
 
@@ -139,8 +140,12 @@ void CommandContext::End()
 
 void CommandContext::PresentInViewport(rhi::RenderViewportRef rvp)
 {
+    [m_CmdBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
+        
+    }];
     auto vp = k3d::StaticPointerCast<RenderViewport>(rvp);
     [m_CmdBuffer presentDrawable:vp->m_CurrentDrawable];
+    [m_CmdBuffer commit];
 }
 
 NS_K3D_METAL_END

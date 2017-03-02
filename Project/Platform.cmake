@@ -1,5 +1,5 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(CMAKE_CXX_FLAGS "-x objective-c++ ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-fno-objc-arc -x objective-c++ ${CMAKE_CXX_FLAGS}")
     if(IOS)
         add_definitions(-DK3DPLATFORM_OS_IOS=1)
         set(K3D_TARGET_SYSTEM "iOS")

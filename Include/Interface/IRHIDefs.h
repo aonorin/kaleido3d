@@ -64,6 +64,12 @@ namespace rhi
 		VertexFormatNum
 	};
 
+	enum EVertexInputRate
+	{
+		EVIR_PerVertex,
+		EVIR_PerInstance
+	};
+
 	enum EMultiSampleFlag
 	{
 		EMS_1x,
@@ -443,6 +449,7 @@ namespace rhi
 		float MinDepth;
 		float MaxDepth;
 	};
+
 	/**
 	 * EVertexFormat,
 	 * Stride,
@@ -457,6 +464,39 @@ namespace rhi
 		uint32			AttributeIndex;
 		uint32			OffSet;
 		uint32			BindID;
+	};
+	
+	struct VertexInputState
+	{
+		enum {
+			kInvalidValue = -1,
+			kMaxVertexLayouts = 4,
+			kMaxVertexBindings = 8,
+		};
+
+		struct Attribute
+		{
+			Attribute(EVertexFormat const& format = EVF_Float3x32, uint32 offset = kInvalidValue, uint32 slot = kInvalidValue)
+			: Format(format), OffSet(offset), Slot(slot) 
+			{}
+
+			EVertexFormat		Format 	= EVF_Float3x32;
+			uint32				OffSet 	= kInvalidValue;
+			uint32				Slot 	= kInvalidValue;
+		};
+
+		struct Layout
+		{
+			Layout(EVertexInputRate const& inputRate = EVIR_PerVertex, uint32 stride = kInvalidValue)
+			: Rate(inputRate), Stride(stride)
+			{}
+
+			EVertexInputRate 	Rate 	= EVIR_PerVertex;
+			uint32				Stride 	= kInvalidValue;
+		};
+
+		Attribute 				Attribs[kMaxVertexBindings];
+		Layout					Layouts[kMaxVertexLayouts];
 	};
 
 	struct VertexBufferView

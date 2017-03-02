@@ -141,6 +141,11 @@ namespace
         MTLVertexFormatFloat3,
         MTLVertexFormatFloat4,
     };
+    
+    MTLVertexStepFunction g_VertexInputRates[] = {
+        MTLVertexStepFunctionPerVertex,
+        MTLVertexStepFunctionPerInstance,
+    };
 }
 
 NS_K3D_METAL_END

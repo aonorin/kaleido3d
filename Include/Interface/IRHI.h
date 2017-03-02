@@ -157,9 +157,12 @@ namespace rhi
 		DepthStencilState	DepthStencil;
 
 		// Shaders
-		ShaderBundle	   Shaders[ShaderTypeNum];
+		ShaderBundle	   	Shaders[ShaderTypeNum];
 		// VertexAttributes
+		// @deprecated
 		VertexInputLayout	VertexLayout;
+		// Vertex Input State
+		VertexInputState	InputState;
 		// InputAssemblyState
 		EPrimitiveType		PrimitiveTopology = rhi::EPT_Triangles;
 	};

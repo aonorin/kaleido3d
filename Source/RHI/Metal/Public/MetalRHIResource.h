@@ -9,6 +9,36 @@ NS_K3D_METAL_BEGIN
 
 class Device;
 
+class BufferRef
+{
+public:
+    BufferRef(id<MTLBuffer> iBuf)
+    : m_InterCnt(0)
+    , m_ExtCnt(0)
+    {
+        m_iBuffer = iBuf;
+    }
+    
+    ~BufferRef()
+    {
+    }
+    
+    void Retain()
+    {
+        
+    }
+    
+    void Release()
+    {
+        
+    }
+    
+private:
+    id<MTLBuffer> m_iBuffer;
+    int m_InterCnt;
+    int m_ExtCnt;
+};
+
 class Buffer : public rhi::IGpuResource
 {
 public:

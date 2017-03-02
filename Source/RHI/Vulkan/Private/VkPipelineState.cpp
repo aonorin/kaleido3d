@@ -237,6 +237,32 @@ GetShaderStageInfo(GpuRef device, rhi::PipelineDesc const & desc)
 	return infos;
 }
 
+DynArray<VkVertexInputAttributeDescription> RHIInputAttribs(rhi::VertexInputState ia)
+{
+	DynArray<VkVertexInputAttributeDescription> iad;
+	for(uint32 i = 0; i<rhi::VertexInputState::kMaxVertexBindings; i++)
+	{
+		auto attrib = ia.Attribs[i];
+		if(attrib.Slot == rhi::VertexInputState::kInvalidValue)
+			break;
+		iad.Append({i, attrib.Slot, g_VertexFormatTable[attrib.Format], attrib.OffSet});
+	}
+	return iad;
+}
+
+DynArray<VkVertexInputBindingDescription> RHIInputLayouts(rhi::VertexInputState const& ia)
+{
+	DynArray<VkVertexInputBindingDescription> ibd;
+	for(uint32 i = 0; i<rhi::VertexInputState::kMaxVertexLayouts; i++)
+	{
+		auto layout = ia.Layouts[i];
+		if(layout.Stride == rhi::VertexInputState::kInvalidValue)
+			break;
+		ibd.Append({i, layout.Stride, g_InputRates[layout.Rate]});
+	}
+	return ibd;
+}
+
 void PipelineStateObject::InitWithDesc(rhi::PipelineDesc const & desc)
 {
 	m_ShaderStageInfos = GetShaderStageInfo(GetGpuRef(), desc);
@@ -275,7 +301,7 @@ void PipelineStateObject::InitWithDesc(rhi::PipelineDesc const & desc)
 	blendAttachmentState[0].blendEnable = desc.Blend.Enable ? VK_TRUE : VK_FALSE;
 	colorBlendState.attachmentCount = 1;
 	colorBlendState.pAttachments = blendAttachmentState;
-
+/* @deprecated
 	struct VIADLess {
 		bool operator() (const VkVertexInputBindingDescription& lhs, const VkVertexInputBindingDescription& rhs) const {
 			return lhs.binding < rhs.binding || lhs.stride < rhs.stride || lhs.inputRate < rhs.inputRate;
@@ -292,12 +318,14 @@ void PipelineStateObject::InitWithDesc(rhi::PipelineDesc const & desc)
 		m_AttributeDescriptions.push_back(attribDesc);
 	}
 	m_BindingDescriptions.assign(bindings.begin(), bindings.end());
-
+*/
+	auto IAs = RHIInputAttribs(desc.InputState);
+	auto IBs = RHIInputLayouts(desc.InputState);
 	VkPipelineVertexInputStateCreateInfo vertexInputState = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, NULL };
-	vertexInputState.vertexBindingDescriptionCount = m_BindingDescriptions.size();
-	vertexInputState.pVertexBindingDescriptions = m_BindingDescriptions.data();
-	vertexInputState.vertexAttributeDescriptionCount = (uint32)m_AttributeDescriptions.size();
-	vertexInputState.pVertexAttributeDescriptions = m_AttributeDescriptions.data();
+	vertexInputState.vertexBindingDescriptionCount = IBs.Count();
+	vertexInputState.pVertexBindingDescriptions = IBs.Data();
+	vertexInputState.vertexAttributeDescriptionCount = IAs.Count();
+	vertexInputState.pVertexAttributeDescriptions = IAs.Data();
 
 	VkPipelineViewportStateCreateInfo vpInfo = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 	vpInfo.viewportCount = 1;

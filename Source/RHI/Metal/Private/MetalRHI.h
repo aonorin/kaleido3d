@@ -68,6 +68,7 @@ inline rhi::DeviceRef DeviceAdapter::GetDevice()
     if(!m_pRHIDevice)
     {
         auto pDevice = new Device(m_Device);
+        pDevice->Create(this, false);
         m_pRHIDevice = rhi::DeviceRef(pDevice);
     }
     return m_pRHIDevice;
@@ -114,12 +115,22 @@ private:
     float                           m_DepthBias;
     float                           m_DepthBiasClamp;
     
-    
+    MTLPrimitiveType                m_PrimitiveType;
     
     MTLRenderPipelineReflection*    m_RenderReflection;
     MTLComputePipelineReflection*   m_ComputeReflection;
     
     id<MTLDepthStencilState>        m_DepthStencilState;
+};
+
+class PipelineLayout : public rhi::IPipelineLayout
+{
+public:
+    PipelineLayout();
+    ~PipelineLayout();
+    
+private:
+    
 };
 
 class CommandContext : public rhi::ICommandContext
@@ -174,7 +185,7 @@ private:
     id <MTLParallelRenderCommandEncoder> m_ParallelRenderEncoder;
     id<MTLCommandBuffer>            m_CmdBuffer;
     
-    id<MTLBuffer>                   m_tmpVertexBuffer;
+    id<MTLBuffer>                   m_TmpIndexBuffer;
 };
 
 class RenderViewport : public rhi::IRenderViewport
