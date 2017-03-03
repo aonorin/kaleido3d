@@ -46,10 +46,10 @@ public:
 	Semaphore(Device::Ptr pDevice, VkSemaphoreCreateInfo const & info = SemaphoreCreateInfo::Create())
 		: DeviceChild(pDevice)
 	{
-		K3D_VK_VERIFY(GetGpuRef()->vkCreateSemaphore(GetRawDevice(), &info, nullptr, &m_Semaphore));
+		K3D_VK_VERIFY(vkCreateSemaphore(GetRawDevice(), &info, nullptr, &m_Semaphore));
 		VKLOG(Info, "Semaphore Created. (0x%0x).", m_Semaphore);
 	}
-	~Semaphore() { GetGpuRef()->vkDestroySemaphore(GetRawDevice(), m_Semaphore, nullptr); }
+	~Semaphore() { vkDestroySemaphore(GetRawDevice(), m_Semaphore, nullptr); }
 
 	VkSemaphore	GetNativeHandle() const { return m_Semaphore; }
 

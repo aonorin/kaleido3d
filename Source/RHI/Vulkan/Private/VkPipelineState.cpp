@@ -70,7 +70,7 @@ VkShaderModule CreateShaderModule(GpuRef Device, String ShaderBytes)
 	moduleCreateInfo.codeSize = ShaderBytes.Length();
 	moduleCreateInfo.pCode = (const uint32_t*)ShaderBytes.Data();
 	moduleCreateInfo.flags = 0;
-	K3D_VK_VERIFY(Device->vkCreateShaderModule(Device->m_LogicalDevice, &moduleCreateInfo, NULL, &shaderModule));
+	K3D_VK_VERIFY(vkCreateShaderModule(Device->m_LogicalDevice, &moduleCreateInfo, NULL, &shaderModule));
 	return shaderModule;
 }
 
@@ -97,27 +97,27 @@ void PipelineStateObject::Finalize()
 		return;
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
 	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-	K3D_VK_VERIFY(GetGpuRef()->vkCreatePipelineCache(GetRawDevice(), &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
+	K3D_VK_VERIFY(vkCreatePipelineCache(GetRawDevice(), &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
 	if (GetType() == rhi::EPSO_Graphics) 
 	{
-		K3D_VK_VERIFY(GetGpuRef()->vkCreateGraphicsPipelines(GetRawDevice(), m_PipelineCache, 1, &m_GfxCreateInfo, nullptr, &m_Pipeline));
+		K3D_VK_VERIFY(vkCreateGraphicsPipelines(GetRawDevice(), m_PipelineCache, 1, &m_GfxCreateInfo, nullptr, &m_Pipeline));
 	}
 	else
 	{
 		m_CptCreateInfo.stage = m_ShaderStageInfos[0];
-		K3D_VK_VERIFY(GetGpuRef()->vkCreateComputePipelines(GetRawDevice(), m_PipelineCache, 1, &m_CptCreateInfo, nullptr, &m_Pipeline));
+		K3D_VK_VERIFY(vkCreateComputePipelines(GetRawDevice(), m_PipelineCache, 1, &m_CptCreateInfo, nullptr, &m_Pipeline));
 	}
 }
 
 void PipelineStateObject::SavePSO(const char * path)
 {
 	size_t szPSO = 0;
-	K3D_VK_VERIFY(GetGpuRef()->vkGetPipelineCacheData(GetRawDevice(), m_PipelineCache, &szPSO, nullptr));
+	K3D_VK_VERIFY(vkGetPipelineCacheData(GetRawDevice(), m_PipelineCache, &szPSO, nullptr));
 	if (!szPSO || !path)
 		return;
 	DynArray<char> dataBlob;
 	dataBlob.Resize(szPSO);
-	GetGpuRef()->vkGetPipelineCacheData(GetRawDevice(), m_PipelineCache, &szPSO, dataBlob.Data());
+	vkGetPipelineCacheData(GetRawDevice(), m_PipelineCache, &szPSO, dataBlob.Data());
 	Os::File psoCacheFile(path);
 	psoCacheFile.Open(IOWrite);
 	psoCacheFile.Write(dataBlob.Data(), szPSO);
@@ -133,7 +133,7 @@ void PipelineStateObject::LoadPSO(const char * path)
 	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 	pipelineCacheCreateInfo.pInitialData = psoFile.FileData();
 	pipelineCacheCreateInfo.initialDataSize = psoFile.GetSize();
-	K3D_VK_VERIFY(GetGpuRef()->vkCreatePipelineCache(GetRawDevice(), &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
+	K3D_VK_VERIFY(vkCreatePipelineCache(GetRawDevice(), &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
 }
 
 void PipelineStateObject::SetRasterizerState(const rhi::RasterizerState& rasterState)
@@ -371,18 +371,18 @@ void PipelineStateObject::Destroy()
 	{
 		if(iter.module)
 		{
-			GetGpuRef()->vkDestroyShaderModule(GetRawDevice(), iter.module, nullptr);
+			vkDestroyShaderModule(GetRawDevice(), iter.module, nullptr);
 		}
 	}
 	if (m_PipelineCache)
 	{
-		GetGpuRef()->vkDestroyPipelineCache(GetRawDevice(), m_PipelineCache, nullptr);
+		vkDestroyPipelineCache(GetRawDevice(), m_PipelineCache, nullptr);
 		VKLOG(Info, "PipelineCache  Destroyed.. -- %0x.", m_PipelineCache);
 		m_PipelineCache = VK_NULL_HANDLE;
 	}
 	if (m_Pipeline)
 	{
-		GetGpuRef()->vkDestroyPipeline(GetRawDevice(), m_Pipeline, nullptr);
+		vkDestroyPipeline(GetRawDevice(), m_Pipeline, nullptr);
 		VKLOG(Info, "PipelineStateObject  Destroyed.. -- %0x.", m_Pipeline);
 		m_Pipeline = VK_NULL_HANDLE;
 	}

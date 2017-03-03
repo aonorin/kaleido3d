@@ -10,3 +10,7 @@ elseif(IOS OR MACOS)
 	add_subdirectory(Metal)
 	add_subdirectory(OpenGL)
 endif()
+
+if(BUILD_WITH_UNIT_TEST)
+	add_subdirectory(UnitTest)
+endif(BUILD_WITH_UNIT_TEST)

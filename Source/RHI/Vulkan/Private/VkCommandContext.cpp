@@ -45,21 +45,21 @@ VkResult CommandQueue::Submit(const std::vector<VkSubmitInfo>& submits, VkFence 
 	K3D_ASSERT(!submits.empty());
 	uint32_t submitCount = static_cast<uint32_t>(submits.size());
 	const VkSubmitInfo* pSubmits = submits.data();
-	VkResult err = GetGpuRef()->vkQueueSubmit(m_Queue, submitCount, pSubmits, fence);
+	VkResult err = vkQueueSubmit(m_Queue, submitCount, pSubmits, fence);
 	K3D_ASSERT((err == VK_SUCCESS) || (err == VK_ERROR_DEVICE_LOST));
 	return err;
 }
 
 void CommandQueue::WaitIdle()
 {
-	K3D_VK_VERIFY(GetGpuRef()->vkQueueWaitIdle(m_Queue));
+	K3D_VK_VERIFY(vkQueueWaitIdle(m_Queue));
 }
 
 void CommandQueue::Initialize(VkQueueFlags queueTypes, uint32 queueFamilyIndex, uint32 queueIndex)
 {
 	m_QueueFamilyIndex = queueFamilyIndex;
 	m_QueueIndex = queueIndex;
-	GetGpuRef()->vkGetDeviceQueue(GetRawDevice(), m_QueueFamilyIndex, m_QueueIndex, &m_Queue);
+	vkGetDeviceQueue(GetRawDevice(), m_QueueFamilyIndex, m_QueueIndex, &m_Queue);
 }
 
 void CommandQueue::Destroy()
@@ -140,7 +140,7 @@ void CommandContext::Detach(rhi::IDevice * pDevice)
 
 void CommandContext::CopyBuffer(rhi::IGpuResource& Dest, rhi::IGpuResource& Src, rhi::CopyBufferRegion const& Region)
 {
-	GetGpuRef()->vkCmdCopyBuffer(m_CommandBuffer, (VkBuffer)Src.GetResourceLocation(), (VkBuffer)Dest.GetResourceLocation(), 1, (const VkBufferCopy*)&Region);
+	vkCmdCopyBuffer(m_CommandBuffer, (VkBuffer)Src.GetResourceLocation(), (VkBuffer)Dest.GetResourceLocation(), 1, (const VkBufferCopy*)&Region);
 }
 
 void CommandContext::CopyTexture(const rhi::TextureCopyLocation & Dest, const rhi::TextureCopyLocation & Src)
@@ -158,7 +158,7 @@ void CommandContext::CopyTexture(const rhi::TextureCopyLocation & Dest, const rh
 			bImgCpy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 			Copies.Append(bImgCpy);
 		}
-		GetGpuRef()->vkCmdCopyBufferToImage(m_CommandBuffer, (VkBuffer)Src.pResource->GetResourceLocation(), (VkImage)Dest.pResource->GetResourceLocation(),
+		vkCmdCopyBufferToImage(m_CommandBuffer, (VkBuffer)Src.pResource->GetResourceLocation(), (VkImage)Dest.pResource->GetResourceLocation(),
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, Copies.Count(), Copies.Data());
 	}
 }
@@ -254,7 +254,7 @@ void CommandContext::Begin()
 	beginInfo.pNext = nullptr;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 	beginInfo.pInheritanceInfo = nullptr;
-	K3D_VK_VERIFY(GetGpuRef()->vkBeginCommandBuffer(m_CommandBuffer, &beginInfo));
+	K3D_VK_VERIFY(vkBeginCommandBuffer(m_CommandBuffer, &beginInfo));
 }
 
 void CommandContext::BeginRendering() 
@@ -272,14 +272,14 @@ void CommandContext::End()
 		EndRenderPass();
 		m_IsRenderPassActive = false;
 	}
-	GetGpuRef()->vkEndCommandBuffer(m_CommandBuffer);
+	vkEndCommandBuffer(m_CommandBuffer);
 }
 
 void CommandContext::EndRendering()
 {
 	if (m_IsRenderPassActive)
 	{
-		GetGpuRef()->vkCmdEndRenderPass(m_CommandBuffer);
+		vkCmdEndRenderPass(m_CommandBuffer);
 		m_IsRenderPassActive = false;
 	}
 }
@@ -298,7 +298,7 @@ void CommandContext::BindDescriptorSets(
 	uint32 firstSet, uint32 descriptorSetCount, const VkDescriptorSet * pDescriptorSets, 
 	uint32 dynamicOffsetCount, const uint32 * pDynamicOffsets)
 {
-	GetGpuRef()->vkCmdBindDescriptorSets(m_CommandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+	vkCmdBindDescriptorSets(m_CommandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
 }
 
 void CommandContext::BindDescriptorSet(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, const VkDescriptorSet & pDescriptorSets)
@@ -309,7 +309,7 @@ void CommandContext::BindDescriptorSet(VkPipelineBindPoint pipelineBindPoint, Vk
 
 void CommandContext::ClearColorImage(VkImage image, VkImageLayout imageLayout, const VkClearColorValue * pColor, uint32 rangeCount, const VkImageSubresourceRange * pRanges)
 {
-	GetGpuRef()->vkCmdClearColorImage(m_CommandBuffer, image, imageLayout, pColor, rangeCount, pRanges);
+	vkCmdClearColorImage(m_CommandBuffer, image, imageLayout, pColor, rangeCount, pRanges);
 }
 
 void CommandContext::ClearColorImage(SpTexture colorBuffer, const VkClearColorValue * pColor, VkImageLayout imageLayout)
@@ -321,17 +321,17 @@ void CommandContext::ClearColorImage(SpTexture colorBuffer, const VkClearColorVa
 
 void CommandContext::ClearDepthStencilImage(VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue * pDepthStencil, uint32 rangeCount, const VkImageSubresourceRange * pRanges)
 {
-	GetGpuRef()->vkCmdClearDepthStencilImage(m_CommandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
+	vkCmdClearDepthStencilImage(m_CommandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 }
 
 void CommandContext::ClearAttachments(uint32 attachmentCount, const VkClearAttachment * pAttachments, uint32 rectCount, const VkClearRect * pRects)
 {
-	GetGpuRef()->vkCmdClearAttachments(m_CommandBuffer, attachmentCount, pAttachments, rectCount, pRects);
+	vkCmdClearAttachments(m_CommandBuffer, attachmentCount, pAttachments, rectCount, pRects);
 }
 
 void CommandContext::PipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32 memoryBarrierCount, const VkMemoryBarrier * pMemoryBarriers, uint32 bufferMemoryBarrierCount, const VkBufferMemoryBarrier * pBufferMemoryBarriers, uint32 imageMemoryBarrierCount, const VkImageMemoryBarrier * pImageMemoryBarriers)
 {
-	GetGpuRef()->vkCmdPipelineBarrier(m_CommandBuffer,
+	vkCmdPipelineBarrier(m_CommandBuffer,
 		srcStageMask, dstStageMask, dependencyFlags, 
 		memoryBarrierCount, pMemoryBarriers,
 		bufferMemoryBarrierCount, pBufferMemoryBarriers, 
@@ -428,23 +428,23 @@ void CommandContext::PipelineBarrierImageMemory(const ImageMemoryBarrierParams &
 
 void CommandContext::PushConstants(VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32 offset, uint32 size, const void * pValues)
 {
-	GetGpuRef()->vkCmdPushConstants(m_CommandBuffer, layout, stageFlags, offset, size, pValues);
+	vkCmdPushConstants(m_CommandBuffer, layout, stageFlags, offset, size, pValues);
 }
 
 void CommandContext::BeginRenderPass(const VkRenderPassBeginInfo * pRenderPassBegin, VkSubpassContents contents)
 {
-	GetGpuRef()->vkCmdBeginRenderPass(m_CommandBuffer, pRenderPassBegin, contents);
+	vkCmdBeginRenderPass(m_CommandBuffer, pRenderPassBegin, contents);
 }
 
 void CommandContext::SetScissorRects(uint32 count, VkRect2D * pRects)
 {
-	GetGpuRef()->vkCmdSetScissor(m_CommandBuffer, 0, count, pRects);
+	vkCmdSetScissor(m_CommandBuffer, 0, count, pRects);
 }
 
 void CommandContext::ClearColorBuffer(rhi::GpuResourceRef gpuRes, kMath::Vec4f const& color)
 {
 	VkImageSubresourceRange image_subresource_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-	GetGpuRef()->vkCmdClearColorImage(m_CommandBuffer, (VkImage)gpuRes->GetResourceLocation(),
+	vkCmdClearColorImage(m_CommandBuffer, (VkImage)gpuRes->GetResourceLocation(),
 		g_ResourceState[ gpuRes->GetUsageState() ], (const VkClearColorValue*)&color, 1, &image_subresource_range);
 }
 
@@ -460,7 +460,7 @@ void CommandContext::SetRenderTargets(uint32 NumColorBuffer, rhi::IColorBuffer *
 
 void CommandContext::SetViewport(const rhi::ViewportDesc & viewport)
 {
-	GetGpuRef()->vkCmdSetViewport(m_CommandBuffer, 0, 1, reinterpret_cast<const VkViewport*>(&viewport));
+	vkCmdSetViewport(m_CommandBuffer, 0, 1, reinterpret_cast<const VkViewport*>(&viewport));
 }
 
 /**
@@ -481,27 +481,27 @@ void CommandContext::SetScissorRects(uint32 count, const rhi::Rect* pRect)
 	{
 		RHIRect2VkRect(pRect[i], scissorRects[i]);
 	}
-	GetGpuRef()->vkCmdSetScissor(m_CommandBuffer, 0, count, scissorRects.data());
+	vkCmdSetScissor(m_CommandBuffer, 0, count, scissorRects.data());
 }
 
 void CommandContext::SetIndexBuffer(const rhi::IndexBufferView& IBView)
 {
 	VkBuffer buf = (VkBuffer)(IBView.BufferLocation);
-	GetGpuRef()->vkCmdBindIndexBuffer(m_CommandBuffer, buf, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(m_CommandBuffer, buf, 0, VK_INDEX_TYPE_UINT32);
 }
 
 void CommandContext::SetVertexBuffer(uint32 Slot, const rhi::VertexBufferView& VBView)
 {
 	VkBuffer buf = (VkBuffer)(VBView.BufferLocation);
 	VkDeviceSize offsets[1] = { 0 };
-	GetGpuRef()->vkCmdBindVertexBuffers(m_CommandBuffer, Slot, 1, &buf, offsets);
+	vkCmdBindVertexBuffers(m_CommandBuffer, Slot, 1, &buf, offsets);
 }
 
 void CommandContext::SetPipelineState(uint32 hashCode, rhi::PipelineStateObjectRef pipelineState)
 {
 	K3D_ASSERT(pipelineState);
 	PipelineStateObject * gfxPso = static_cast<PipelineStateObject*>(pipelineState.Get());
-	GetGpuRef()->vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gfxPso->m_Pipeline);
+	vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gfxPso->m_Pipeline);
 }
 
 void CommandContext::SetPipelineLayout(rhi::PipelineLayoutRef pRHIPipelineLayout)
@@ -509,7 +509,7 @@ void CommandContext::SetPipelineLayout(rhi::PipelineLayoutRef pRHIPipelineLayout
 	K3D_ASSERT(pRHIPipelineLayout);
 	auto pipelineLayout = StaticPointerCast<PipelineLayout>(pRHIPipelineLayout);
 	VkDescriptorSet sets[] = { pipelineLayout->GetNativeDescriptorSet() };
-	GetGpuRef()->vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout->GetNativeLayout(), 0, 1, sets, 0, NULL);
+	vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout->GetNativeLayout(), 0, 1, sets, 0, NULL);
 }
 
 void CommandContext::SetPrimitiveType(rhi::EPrimitiveType)
@@ -519,24 +519,24 @@ void CommandContext::SetPrimitiveType(rhi::EPrimitiveType)
 
 void CommandContext::DrawInstanced(rhi::DrawInstancedParam drawParam)
 {
-	GetGpuRef()->vkCmdDraw(m_CommandBuffer, drawParam.VertexCountPerInstance, drawParam.InstanceCount,
+	vkCmdDraw(m_CommandBuffer, drawParam.VertexCountPerInstance, drawParam.InstanceCount,
 		drawParam.StartVertexLocation, drawParam.StartInstanceLocation);
 }
 
 void CommandContext::DrawIndexedInstanced(rhi::DrawIndexedInstancedParam drawParam)
 {
-	GetGpuRef()->vkCmdDrawIndexed(m_CommandBuffer, drawParam.IndexCountPerInstance, drawParam.InstanceCount,
+	vkCmdDrawIndexed(m_CommandBuffer, drawParam.IndexCountPerInstance, drawParam.InstanceCount,
 		drawParam.StartIndexLocation, drawParam.BaseVertexLocation, drawParam.StartInstanceLocation);
 }
 
 void CommandContext::NextSubpass(VkSubpassContents contents)
 {
-	GetGpuRef()->vkCmdNextSubpass(m_CommandBuffer, contents);
+	vkCmdNextSubpass(m_CommandBuffer, contents);
 }
 
 void CommandContext::EndRenderPass()
 {
-	GetGpuRef()->vkCmdEndRenderPass(m_CommandBuffer);
+	vkCmdEndRenderPass(m_CommandBuffer);
 }
 
 void CommandContext::SetRenderTarget(rhi::RenderTargetRef rt)
@@ -562,7 +562,7 @@ void CommandContext::SetRenderTarget(rhi::RenderTargetRef rt)
 
 void CommandContext::Dispatch(uint32 x, uint32 y, uint32 z)
 {
-	GetGpuRef()->vkCmdDispatch(m_CommandBuffer, x, y, z);
+	vkCmdDispatch(m_CommandBuffer, x, y, z);
 }
 
 void CommandContext::TransitionResourceBarrier(rhi::GpuResourceRef resource,/* rhi::EPipelineStage stage,*/ rhi::EResourceState dstState)
@@ -590,7 +590,7 @@ void CommandContext::ExecuteBundle(rhi::ICommandContext * pCmd)
 {
 	auto pCmdCtx = static_cast<CommandContext*>(pCmd);
 	VkCommandBuffer buffer[] = { pCmdCtx->m_CommandBuffer };
-	GetGpuRef()->vkCmdExecuteCommands(m_CommandBuffer, 1, buffer);
+	vkCmdExecuteCommands(m_CommandBuffer, 1, buffer);
 }
 
 K3D_VK_END

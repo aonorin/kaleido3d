@@ -123,11 +123,25 @@ private:
     id<MTLDepthStencilState>        m_DepthStencilState;
 };
 
+class DescriptorSet : public rhi::IDescriptor
+{
+public:
+    DescriptorSet()
+    {}
+    
+    void Update(uint32 bindSet, rhi::GpuResourceRef res) override;
+    
+private:
+    
+};
+
 class PipelineLayout : public rhi::IPipelineLayout
 {
 public:
-    PipelineLayout();
+    PipelineLayout(rhi::PipelineLayoutDesc const&);
     ~PipelineLayout();
+    
+    rhi::DescriptorRef GetDescriptorSet() const override;
     
 private:
     

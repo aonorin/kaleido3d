@@ -140,3 +140,7 @@ install(DIRECTORY ${Kaleido3D_ROOT_DIR}/Include/Config
     DESTINATION include/kaleido3d
     FILES_MATCHING PATTERN "*.h"
 )
+
+if(BUILD_WITH_UNIT_TEST)
+    add_subdirectory(UnitTest)
+endif()

@@ -11,9 +11,9 @@ void Instance::EnumGpus()
 {
 	DynArray<VkPhysicalDevice> gpus;
 	uint32_t gpuCount = 0;
-	K3D_VK_VERIFY(fpEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr));
+	K3D_VK_VERIFY(vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr));
 	gpus.Resize(gpuCount);
-	K3D_VK_VERIFY(fpEnumeratePhysicalDevices(m_Instance, &gpuCount, gpus.Data()));
+	K3D_VK_VERIFY(vkEnumeratePhysicalDevices(m_Instance, &gpuCount, gpus.Data()));
 	for (auto gpu : gpus)
 	{
 		auto gpuRef = GpuRef(new Gpu(gpu, this));
@@ -265,7 +265,7 @@ PtrSemaphore Device::NewSemaphore()
 void Device::QueryTextureSubResourceLayout(rhi::GpuResourceRef resource, rhi::TextureResourceSpec const & spec, rhi::SubResourceLayout * layout)
 {
 	K3D_ASSERT(resource && resource->GetResourceType() != rhi::EGT_Buffer);
-	m_Gpu->vkGetImageSubresourceLayout(m_Device, (VkImage)resource->GetResourceLocation(), (const VkImageSubresource*)&spec, (VkSubresourceLayout*)layout);
+	vkGetImageSubresourceLayout(m_Device, (VkImage)resource->GetResourceLocation(), (const VkImageSubresource*)&spec, (VkSubresourceLayout*)layout);
 }
 
 SwapChainRef

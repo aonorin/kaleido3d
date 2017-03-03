@@ -34,7 +34,7 @@ FrameBuffer::FrameBuffer(Device::Ptr pDevice, VkRenderPass renderPass, FrameBuff
 	createInfo.height = m_Height;
 	createInfo.layers = 1;
 	createInfo.flags = 0;
-	K3D_VK_VERIFY(GetGpuRef()->vkCreateFramebuffer(GetRawDevice(), &createInfo, nullptr, &m_FrameBuffer));
+	K3D_VK_VERIFY(vkCreateFramebuffer(GetRawDevice(), &createInfo, nullptr, &m_FrameBuffer));
 }
 
 FrameBuffer::FrameBuffer(Device::Ptr pDevice, RenderPass * renderPass, RenderTargetLayout const &)
@@ -49,7 +49,7 @@ FrameBuffer::~FrameBuffer()
 		return;
 	}
 	VKLOG(Info, "FrameBuffer destroy... -- %0x.", m_FrameBuffer);
-	GetGpuRef()->vkDestroyFramebuffer(GetRawDevice(), m_FrameBuffer, nullptr);
+	vkDestroyFramebuffer(GetRawDevice(), m_FrameBuffer, nullptr);
 	m_FrameBuffer = VK_NULL_HANDLE;
 }
 

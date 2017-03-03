@@ -23,6 +23,7 @@ option(BUILD_SHARED "Build runtime library as shared libs" ON)
 option(BUILD_WITH_EDITOR "Build With Editor" OFF)
 option(BUILD_WITH_D3D12 "Build With D3D12 RHI" OFF)
 option(BUILD_WITH_V8 "Build With V8 Script Module" OFF)
+option(BUILD_WITH_UNIT_TEST "Build With Unit Test" ON)
 
 if(IOS OR MACOS)
 	set(LIB_DIR @loader_path/../Frameworks)
@@ -126,9 +127,6 @@ endif()
 
 add_subdirectory(Tools/ShaderGen)
 
-add_subdirectory(UnitTest)
-#add_subdirectory(Example)
-
 if(BUILD_WITH_EDITOR)
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTOUIC ON)
@@ -137,5 +135,3 @@ if(BUILD_WITH_EDITOR)
 	find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
 	add_subdirectory(Tools/Editor)
 endif()
-
-#file(copy ${K3D_THIRD_PARTY}/v8-5.5.1/vs2015/debug_x64/* DESTINATION Binary/Debug)

@@ -97,6 +97,8 @@ namespace rhi
 	struct IDescriptor
 	{
 		virtual void Update(uint32 bindSet, GpuResourceRef) = 0;
+		virtual void Update(uint32 bindSet, SamplerRef) {};
+		virtual uint32 GetSlotNum() const { return 0; }
 		virtual ~IDescriptor() {}
 	};
 
@@ -158,9 +160,6 @@ namespace rhi
 
 		// Shaders
 		ShaderBundle	   	Shaders[ShaderTypeNum];
-		// VertexAttributes
-		// @deprecated
-		VertexInputLayout	VertexLayout;
 		// Vertex Input State
 		VertexInputState	InputState;
 		// InputAssemblyState

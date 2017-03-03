@@ -221,7 +221,7 @@ std::pair<VkImageView, VkImageViewCreateInfo> ImageViewInfo::CreateColorImageVie
 		info.components.b = VK_COMPONENT_SWIZZLE_B;
 		info.components.a = VK_COMPONENT_SWIZZLE_A;
 	}
-	K3D_VK_VERIFY(device->vkCreateImageView(device->m_LogicalDevice, &info, nullptr, &imageView));
+	K3D_VK_VERIFY(vkCreateImageView(device->m_LogicalDevice, &info, nullptr, &imageView));
 	return std::make_pair(std::move(imageView), std::move(info));
 }
 
@@ -341,8 +341,8 @@ Gpu::Gpu(VkPhysicalDevice const& gpu, Instance* pInst)
 	, m_LogicalDevice(VK_NULL_HANDLE)
 	, m_PhysicalGpu(gpu)
 {
-	m_Inst->fpGetPhysicalDeviceProperties(m_PhysicalGpu, &m_Prop);
-	m_Inst->fpGetPhysicalDeviceMemoryProperties(m_PhysicalGpu, &m_MemProp);
+	vkGetPhysicalDeviceProperties(m_PhysicalGpu, &m_Prop);
+	vkGetPhysicalDeviceMemoryProperties(m_PhysicalGpu, &m_MemProp);
 	VKLOG(Info, "Gpu: %s", m_Prop.deviceName);
 	QuerySupportQueues();
 }
@@ -350,11 +350,11 @@ Gpu::Gpu(VkPhysicalDevice const& gpu, Instance* pInst)
 void Gpu::QuerySupportQueues()
 {
 	uint32 queueCount = 0;
-	m_Inst->fpGetPhysicalDeviceQueueFamilyProperties(m_PhysicalGpu, &queueCount, NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalGpu, &queueCount, NULL);
 	if (queueCount < 1)
 		return;
 	m_QueueProps.Resize(queueCount);
-	m_Inst->fpGetPhysicalDeviceQueueFamilyProperties(m_PhysicalGpu, &queueCount, m_QueueProps.Data());
+	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalGpu, &queueCount, m_QueueProps.Data());
 	uint32 qId = 0;
 	for (qId = 0; qId < queueCount; qId++)
 	{
@@ -398,6 +398,7 @@ exit(-1);\
 
 void Gpu::LoadDeviceProcs()
 {
+#ifdef VK_NO_PROTOTYPES
 	if (!fpDestroyDevice)
 	{
 		fpDestroyDevice = (PFN_vkDestroyDevice)m_Inst->fpGetDeviceProcAddr(m_LogicalDevice, "vkDestroyDevice");
@@ -539,6 +540,7 @@ void Gpu::LoadDeviceProcs()
 	__VK_GET_DEVICE_PROC__(CreateSwapchainKHR, m_Inst->fpGetDeviceProcAddr, m_LogicalDevice);
 	__VK_GET_DEVICE_PROC__(DestroySwapchainKHR, m_Inst->fpGetDeviceProcAddr, m_LogicalDevice);
 	__VK_GET_DEVICE_PROC__(GetSwapchainImagesKHR, m_Inst->fpGetDeviceProcAddr, m_LogicalDevice);
+#endif
 }
 
 Gpu::~Gpu()
@@ -581,7 +583,7 @@ VkDevice Gpu::CreateLogicDevice(bool enableValidation)
 			deviceCreateInfo.enabledExtensionCount = (uint32_t)enabledExtensions.size();
 			deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
 		}
-		K3D_VK_VERIFY(m_Inst->fpCreateDevice(m_PhysicalGpu, &deviceCreateInfo, nullptr, &m_LogicalDevice));
+		K3D_VK_VERIFY(vkCreateDevice(m_PhysicalGpu, &deviceCreateInfo, nullptr, &m_LogicalDevice));
 
 		LoadDeviceProcs();
 	}
@@ -603,7 +605,7 @@ VkBool32 Gpu::GetSupportedDepthFormat(VkFormat * depthFormat)
 	for (auto& format : depthFormats)
 	{
 		VkFormatProperties formatProps;
-		m_Inst->fpGetPhysicalDeviceFormatProperties(m_PhysicalGpu, format, &formatProps);
+		vkGetPhysicalDeviceFormatProperties(m_PhysicalGpu, format, &formatProps);
 		// Format must support depth stencil attachment for optimal tiling
 		if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		{
@@ -617,52 +619,42 @@ VkBool32 Gpu::GetSupportedDepthFormat(VkFormat * depthFormat)
 
 VkResult Gpu::GetSurfaceSupportKHR(uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32 * pSupported)
 {
-	return m_Inst->fpGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalGpu, queueFamilyIndex, surface, pSupported);
+	return vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalGpu, queueFamilyIndex, surface, pSupported);
 }
 
 VkResult Gpu::GetSurfaceCapabilitiesKHR(VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR * pSurfaceCapabilities)
 {
-	return m_Inst->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalGpu, surface, pSurfaceCapabilities);
+	return vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalGpu, surface, pSurfaceCapabilities);
 }
 
 VkResult Gpu::GetSurfaceFormatsKHR(VkSurfaceKHR surface, uint32_t * pSurfaceFormatCount, VkSurfaceFormatKHR * pSurfaceFormats)
 {
-	return m_Inst->fpGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalGpu, surface, pSurfaceFormatCount, pSurfaceFormats);
+	return vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalGpu, surface, pSurfaceFormatCount, pSurfaceFormats);
 }
 
 VkResult Gpu::GetSurfacePresentModesKHR(VkSurfaceKHR surface, uint32_t * pPresentModeCount, VkPresentModeKHR * pPresentModes)
 {
-	return m_Inst->fpGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalGpu, surface, pPresentModeCount, pPresentModes);
+	return vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalGpu, surface, pPresentModeCount, pPresentModes);
 }
 
 void Gpu::DestroyDevice()
 {
-	if (fpDestroyDevice)
-	{
-		fpDestroyDevice(m_LogicalDevice, nullptr);
-	}
+	vkDestroyDevice(m_LogicalDevice, nullptr);
 }
 
 void Gpu::FreeCommandBuffers(VkCommandPool pool, uint32 count, VkCommandBuffer * cmd)
 {
-	if (fpFreeCommandBuffers)
-	{
-		fpFreeCommandBuffers(m_LogicalDevice, pool, count, cmd);
-	}
+	vkFreeCommandBuffers(m_LogicalDevice, pool, count, cmd);
 }
 
 VkResult Gpu::CreateCommdPool(const VkCommandPoolCreateInfo * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkCommandPool * pCommandPool)
 {
-	if (fpCreateCommandPool)
-	{
-		return fpCreateCommandPool(m_LogicalDevice, pCreateInfo, pAllocator, pCommandPool);
-	}
-	return VK_NOT_READY;
+	return vkCreateCommandPool(m_LogicalDevice, pCreateInfo, pAllocator, pCommandPool);
 }
 
 VkResult Gpu::AllocateCommandBuffers(const VkCommandBufferAllocateInfo * pAllocateInfo, VkCommandBuffer * pCommandBuffers)
 {
-	return fpAllocateCommandBuffers(m_LogicalDevice, pAllocateInfo, pCommandBuffers);
+	return vkAllocateCommandBuffers(m_LogicalDevice, pAllocateInfo, pCommandBuffers);
 }
 
 
@@ -704,7 +696,7 @@ Instance::Instance(const::k3d::String & engineName, const::k3d::String & appName
 	instanceCreateInfo.enabledLayerCount = m_EnabledLayersRaw.Count();
 	instanceCreateInfo.ppEnabledLayerNames = m_EnabledLayersRaw.Data();
 
-	VkResult err = gpCreateInstance(&instanceCreateInfo, nullptr, &m_Instance);
+	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &m_Instance);
 	if (err == VK_ERROR_INCOMPATIBLE_DRIVER) 
 	{
 		VKLOG(Error, "Cannot find a compatible Vulkan installable client driver: vkCreateInstance Failure");
@@ -755,29 +747,33 @@ void Instance::LoadGlobalProcs()
 #else
 	static const char* LIBVULKAN = "libvulkan.so";
 #endif
+
+#ifdef VK_NO_PROTOTYPES
 	m_VulkanLib = MakeShared<dynlib::Lib>(LIBVULKAN);
 	// load global functions
 	__VK_GLOBAL_PROC_GET__(CreateInstance, m_VulkanLib->ResolveEntry);
+	__VK_GLOBAL_PROC_GET__(DestroyInstance, m_VulkanLib->ResolveEntry);
 	__VK_GLOBAL_PROC_GET__(EnumerateInstanceExtensionProperties, m_VulkanLib->ResolveEntry);
 	__VK_GLOBAL_PROC_GET__(EnumerateInstanceLayerProperties, m_VulkanLib->ResolveEntry);
 	__VK_GLOBAL_PROC_GET__(GetInstanceProcAddr, m_VulkanLib->ResolveEntry);
+#endif
 }
 
 void Instance::EnumExtsAndLayers()
 {
 	uint32 layerCount = 0;
-	K3D_VK_VERIFY(gpEnumerateInstanceLayerProperties(&layerCount, nullptr));
+	K3D_VK_VERIFY(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
 	if (layerCount > 0)
 	{
 		gVkLayerProps.Resize(layerCount);
-		K3D_VK_VERIFY(gpEnumerateInstanceLayerProperties(&layerCount, gVkLayerProps.Data()));
+		K3D_VK_VERIFY(vkEnumerateInstanceLayerProperties(&layerCount, gVkLayerProps.Data()));
 	}
 	uint32 extCount = 0;
-	K3D_VK_VERIFY(gpEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr));
+	K3D_VK_VERIFY(vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr));
 	if (extCount > 0)
 	{
 		gVkExtProps.Resize(extCount);
-		K3D_VK_VERIFY(gpEnumerateInstanceExtensionProperties(nullptr, &extCount, gVkExtProps.Data()));
+		K3D_VK_VERIFY(vkEnumerateInstanceExtensionProperties(nullptr, &extCount, gVkExtProps.Data()));
 	}
 	VKLOG(Info, ">> Instance::EnumLayersAndExts <<\n\n"
 		"=================================>> layerCount = %d.\n"
@@ -837,6 +833,7 @@ void Instance::ExtractEnabledExtsAndLayers()
 
 void Instance::LoadInstanceProcs()
 {
+#ifdef VK_NO_PROTOTYPES
 	GET_INSTANCE_PROC_ADDR(m_Instance, GetPhysicalDeviceSurfaceSupportKHR);
 	GET_INSTANCE_PROC_ADDR(m_Instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
 	GET_INSTANCE_PROC_ADDR(m_Instance, GetPhysicalDeviceSurfaceFormatsKHR);
@@ -850,8 +847,6 @@ void Instance::LoadInstanceProcs()
 	GET_INSTANCE_PROC_ADDR(m_Instance, GetPhysicalDeviceQueueFamilyProperties);
 	GET_INSTANCE_PROC_ADDR(m_Instance, CreateDevice);
 	GET_INSTANCE_PROC_ADDR(m_Instance, GetDeviceProcAddr);
-	GET_INSTANCE_PROC_ADDR(m_Instance, DestroyInstance);
-
 
 #if K3DPLATFORM_OS_WIN
 	GET_INSTANCE_PROC_ADDR(m_Instance, CreateWin32SurfaceKHR);
@@ -859,6 +854,7 @@ void Instance::LoadInstanceProcs()
 	GET_INSTANCE_PROC_ADDR(m_Instance, CreateAndroidSurfaceKHR);
 #endif
 	GET_INSTANCE_PROC_ADDR(m_Instance, DestroySurfaceKHR);
+#endif
 }
 
 void Instance::AppendLogicalDevice(rhi::DeviceRef logicalDevice)

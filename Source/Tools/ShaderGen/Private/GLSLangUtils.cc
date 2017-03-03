@@ -337,7 +337,25 @@ void ExtractUniformData(rhi::EShaderType const& stype, const glslang::TProgram& 
 		auto qualifier = type->getQualifier();
 		if (qualifier.hasBinding())
 		{
-			outUniformLayout.AddBinding({ glslangTypeToRHIType(baseType), name, stype, qualifier.layoutBinding });
+			rhi::shc::EBindType bind = glslangTypeToRHIType(baseType);
+			if (baseType == EbtSampler)
+			{
+				if (type->getSampler().isCombined())
+				{
+					bind = rhi::shc::EBindType::ESamplerImageCombine;
+				}
+				switch (type->getSampler().dim)
+				{
+				case Esd1D:
+				case Esd2D:
+				case Esd3D:
+				case EsdCube:
+				case EsdRect:
+					bind = rhi::shc::EBindType::ESampledImage;
+					break;
+				}
+			}
+			outUniformLayout.AddBinding({ bind, name, stype, qualifier.layoutBinding });
 		}
 		if (qualifier.hasSet())
 		{

@@ -1,2 +1,2 @@
-cmake -HSource -BBuildMac -GXcode -DCMAKE_BUILD_TYPE=Debug
-cmake --build BuildMac --config Debug
+cmake -HSource -BBuild/Mac/Debug -GXcode -DCMAKE_BUILD_TYPE=Debug
+cmake --build Build/Mac/Debug --config Debug

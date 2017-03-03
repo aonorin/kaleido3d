@@ -61,6 +61,7 @@ namespace dynlib
 	}
 }
 
+#ifdef VK_NO_PROTOTYPES
 _DEF_VK_FUNC_(GetInstanceProcAddr);
 _DEF_VK_FUNC_(GetDeviceProcAddr);
 
@@ -212,9 +213,12 @@ _DEF_VK_FUNC_(CmdNextSubpass);
 _DEF_VK_FUNC_(CmdEndRenderPass);
 _DEF_VK_FUNC_(CmdExecuteCommands);
 _DEF_VK_FUNC_(AcquireNextImageKHR);
+#endif
 
 int LoadVulkan(VkInstance instance, VkDevice device)
 {
+#ifdef VK_NO_PROTOTYPES
+
 #if K3DPLATFORM_OS_WIN
 	_VK_GET_INSTANCE_POINTER_(instance, CreateWin32SurfaceKHR);
 #elif K3DPLATFORM_OS_ANDROID
@@ -356,7 +360,7 @@ int LoadVulkan(VkInstance instance, VkDevice device)
 	_VK_GET_DEVICE_POINTER_(device, CmdEndRenderPass);
 	_VK_GET_DEVICE_POINTER_(device, CmdExecuteCommands);
 	_VK_GET_DEVICE_POINTER_(device, AcquireNextImageKHR);
-
+#endif
 	return 0;
 }
 

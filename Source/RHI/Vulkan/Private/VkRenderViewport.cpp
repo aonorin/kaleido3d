@@ -126,7 +126,7 @@ void RenderViewport::AllocateRenderTargets(rhi::GfxSetting & gfxSetting)
 		image.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		GetGpuRef()->vkCreateImage(GetRawDevice(), &image, nullptr, &depthImage);
+		vkCreateImage(GetRawDevice(), &image, nullptr, &depthImage);
 
 
 		VkDeviceMemory depthMem;
@@ -134,11 +134,11 @@ void RenderViewport::AllocateRenderTargets(rhi::GfxSetting & gfxSetting)
 		VkMemoryAllocateInfo memAlloc = {};
 		memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		VkMemoryRequirements memReqs;
-		GetGpuRef()->vkGetImageMemoryRequirements(GetRawDevice(), depthImage, &memReqs);
+		vkGetImageMemoryRequirements(GetRawDevice(), depthImage, &memReqs);
 		memAlloc.allocationSize = memReqs.size;
 		GetDevice()->FindMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memAlloc.memoryTypeIndex);
-		GetGpuRef()->vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &depthMem);
-		GetGpuRef()->vkBindImageMemory(GetRawDevice(), depthImage, depthMem, 0);
+		vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &depthMem);
+		vkBindImageMemory(GetRawDevice(), depthImage, depthMem, 0);
 
 		auto layoutCmd = k3d::StaticPointerCast<CommandContext>(
 				GetDevice()->NewCommandContext(rhi::ECMD_Graphics));
@@ -165,7 +165,7 @@ void RenderViewport::AllocateRenderTargets(rhi::GfxSetting & gfxSetting)
 		depthStencilView.subresourceRange.baseArrayLayer = 0;
 		depthStencilView.subresourceRange.layerCount = 1;
 		depthStencilView.image = depthImage;
-		GetGpuRef()->vkCreateImageView(GetRawDevice(), &depthStencilView, nullptr, &depthView);
+		vkCreateImageView(GetRawDevice(), &depthStencilView, nullptr, &depthView);
 
 		m_RenderTargets.resize(m_NumBufferCount);
 		RenderpassOptions option = m_RenderPass->GetOption();

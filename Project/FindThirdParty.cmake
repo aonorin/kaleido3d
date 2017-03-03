@@ -51,6 +51,18 @@ find_path(VULKANSDK_INCLUDE_DIR
 )
 endif()
 
+if(WIN32)
+find_library(VULKAN_LIB vulkan-1
+	PATH_SUFFIXES lib/x64
+	PATHS ${ThirdParty_PREBUILT_DIR})
+message(STATUS "** Vulkan \(Windows\) ** ${VULKAN_LIB}")
+elseif(ANDROID)
+find_library(VULKAN_LIB vulkan
+	PATH_SUFFIXES platforms/android-24/arch-${ANDROID_SYSROOT_ABI}/usr/lib
+	PATHS $ENV{ANDROID_NDK})
+message(STATUS "** Vulkan Lib \(Android\) ** ${VULKAN_LIB}")
+endif()
+
 find_path(RAPIDJSON_INCLUDE_DIR
     rapidjson/rapidjson.h
     PATH_SUFFIXES include

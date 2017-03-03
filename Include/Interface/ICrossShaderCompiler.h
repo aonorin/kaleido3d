@@ -76,8 +76,10 @@ namespace rhi
             EUndefined		= 0,
             EBlock			= 0x1,
             ESampler		= 0x1 << 1,
-            EStorageImage	= 0x1 << 2,
+            ESampledImage	= 0x1 << 2,
+			ESamplerImageCombine = (ESampler | ESampledImage),
             EStorageBuffer	= 0x1 << 3,
+			EStorageImage	= 0x1 << 4,
             EConstants		= 0x000000010
         };
         

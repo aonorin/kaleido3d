@@ -53,7 +53,7 @@ source_group(
 add_plugin(RHI_Vulkan 
 	FOLDER "Runtime/RHI" 
 	SRCS ${VKRHI_SRC_LIST} ${RHI_HEADERS} ${RHI_IMPL_SRCS} 
-	LIBS ShaderCompiler)
+	LIBS ShaderCompiler ${VULKAN_LIB})
 
 if(NOT ANDROID)
 	add_precompiled_header(RHI_Vulkan "VkCommon.h" "${Kaleido3D_ROOT_DIR}/Source/RHI/Vulkan" "${Kaleido3D_ROOT_DIR}/Source/RHI/Vulkan/Private/VkRHI.cpp")

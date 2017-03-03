@@ -60,26 +60,26 @@ void Instance::SetupDebugging(VkDebugReportFlagsEXT flags, PFN_vkDebugReportCall
 		VKLOG(Error, "SetupDebugging Failed. (m_Instance == null)");
 		return;
 	}
-	__VK_GLOBAL_PROC_GET__(CreateDebugReportCallbackEXT, m_VulkanLib->ResolveEntry);
-	if (!fpCreateDebugReportCallbackEXT)
-		GET_INSTANCE_PROC_ADDR(m_Instance, CreateDebugReportCallbackEXT);
-	__VK_GLOBAL_PROC_GET__(DestroyDebugReportCallbackEXT, m_VulkanLib->ResolveEntry);
-	if (!fpDestroyDebugReportCallbackEXT)
-		GET_INSTANCE_PROC_ADDR(m_Instance, DestroyDebugReportCallbackEXT);
+//	__VK_GLOBAL_PROC_GET__(CreateDebugReportCallbackEXT, m_VulkanLib->ResolveEntry);
+//	if (!vkCreateDebugReportCallbackEXT)
+//		GET_INSTANCE_PROC_ADDR(m_Instance, CreateDebugReportCallbackEXT);
+//	__VK_GLOBAL_PROC_GET__(DestroyDebugReportCallbackEXT, m_VulkanLib->ResolveEntry);
+//	if (!fpDestroyDebugReportCallbackEXT)
+//		GET_INSTANCE_PROC_ADDR(m_Instance, DestroyDebugReportCallbackEXT);
 	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo;
 	dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
 	dbgCreateInfo.pNext = NULL;
 	dbgCreateInfo.pfnCallback = callBack;
 	dbgCreateInfo.pUserData = NULL;
 	dbgCreateInfo.flags = flags;
-	K3D_VK_VERIFY(fpCreateDebugReportCallbackEXT(m_Instance, &dbgCreateInfo, NULL, &m_DebugMsgCallback));
+	//K3D_VK_VERIFY(vkCreateDebugReportCallbackEXT(m_Instance, &dbgCreateInfo, NULL, &m_DebugMsgCallback));
 }
 
 void Instance::FreeDebugCallback()
 {
 	if (m_Instance && m_DebugMsgCallback)
 	{
-		fpDestroyDebugReportCallbackEXT(m_Instance, m_DebugMsgCallback, nullptr);
+		//vkDestroyDebugReportCallbackEXT(m_Instance, m_DebugMsgCallback, nullptr);
 		m_DebugMsgCallback = VK_NULL_HANDLE;
 	}
 }

@@ -10,6 +10,6 @@ call :Build Debug
 exit /b %errorlevel%
 
 :Build
-%CMAKE_BIN% -G"Android Gradle - Ninja" -DCMAKE_TOOLCHAIN_FILE=%CMAKE_TOOLCHAIN% -HSource -BBuildAndroid_%~1_%STL% -DCMAKE_BUILD_TYPE=%~1 %CMAKE_ANDROID_DEFINES%
-%CMAKE_BIN% --build BuildAndroid_%~1_%STL% --config %~1
+%CMAKE_BIN% -G"Android Gradle - Ninja" -DCMAKE_TOOLCHAIN_FILE=%CMAKE_TOOLCHAIN% -HSource -BBuild\Android\%~1\%STL% -DCMAKE_BUILD_TYPE=%~1 %CMAKE_ANDROID_DEFINES%
+%CMAKE_BIN% --build Build\Android\%~1\%STL% --config %~1
 :End

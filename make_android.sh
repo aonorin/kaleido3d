@@ -10,8 +10,8 @@ CMAKE_ANDROID_DEFINES="$CMAKE_NDK_DEFINES -DCMAKE_MAKE_PROGRAM=$CMAKE_NINJA -DAN
 function build()
 {
 	set -e
-	$CMAKE_BIN -G"Android Gradle - Ninja" -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN -DCMAKE_BUILD_TYPE=$1 $CMAKE_ANDROID_DEFINES -HSource -BBuildAndroid -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=STL_$1
-	$CMAKE_BIN --build BuildAndroid --config $1 --target 3.Triangle
+	$CMAKE_BIN -G"Android Gradle - Ninja" -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN -DCMAKE_BUILD_TYPE=$1 $CMAKE_ANDROID_DEFINES -HSource -BBuild/Android/$STL/$1 -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=STL_$1
+	$CMAKE_BIN --build Build/Android/$STL/$1 --config $1 --target RHI-UnitTest-3.Triangle
 }
 
 build Debug;

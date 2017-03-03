@@ -58,15 +58,17 @@ Current Status
 
 - Planned Samples
 	
-	* [x] Triangle(vk)
-	* [x] Textured Cube 
-	* [x] Compute Shader
-	* [x] Shadow Mapping
-	* [x] Physically Based Shading
-	* [x] Deferred Shading
-	* [x] Multi-thread Rendering
+	* [x] Triangle
+	* [x] Textured Cube
+	* [x] Compute Shader (WIP)
+	* [ ] Physically Based Shading (Material Model)
+	* [ ] Skinned Skeleton Animation
+	* [ ] Shadow Mapping (Render To Texture, Z-Pass)
+	* [ ] Deferred Shading (Multi-RenderTarget)
+	* [ ] Tile-Based Cluster Lighting (Compute Shading)
+	* [ ] Multi-Thread Rendering
 	* [ ] Multi-GPU/CrossAdapter Rendering
-	* [ ] Cross Shader Language Compiler
+	* [x] Cross Shader Language Compiler
 
 ---
 

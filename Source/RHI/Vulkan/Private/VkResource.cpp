@@ -11,7 +11,7 @@ K3D_VK_BEGIN
 Resource::Ptr Resource::Map(uint64 offset, uint64 size)
 {
 	Resource::Ptr ptr;
-	K3D_VK_VERIFY(GetGpuRef()->vkMapMemory(GetRawDevice(), m_DeviceMem, m_AllocationOffset+offset, size, 0, &ptr));
+	K3D_VK_VERIFY(vkMapMemory(GetRawDevice(), m_DeviceMem, m_AllocationOffset+offset, size, 0, &ptr));
 	return ptr;
 }
 
@@ -20,7 +20,7 @@ Resource::~Resource()
 	if (!m_DeviceMem)
 		return;
 	VKLOG(Info, "Resource freeing gpu memory. -- 0x%0x, tid:%d", m_DeviceMem, Os::Thread::GetId());
-	GetGpuRef()->vkFreeMemory(GetRawDevice(), m_DeviceMem, nullptr);
+	vkFreeMemory(GetRawDevice(), m_DeviceMem, nullptr);
 	m_DeviceMem = VK_NULL_HANDLE;
 }
 
@@ -58,13 +58,13 @@ Buffer::~Buffer()
 {
 	if (VK_NULL_HANDLE != m_BufferView)
 	{
-		GetGpuRef()->vkDestroyBufferView(GetRawDevice(), m_BufferView, nullptr);
+		vkDestroyBufferView(GetRawDevice(), m_BufferView, nullptr);
 		m_BufferView = VK_NULL_HANDLE;
 	}
 	if (VK_NULL_HANDLE != m_Buffer)
 	{
 		VKLOG(Info, "Buffer Destroying.. -- %0x.", m_Buffer);
-		GetGpuRef()->vkDestroyBuffer(GetRawDevice(), m_Buffer, nullptr);
+		vkDestroyBuffer(GetRawDevice(), m_Buffer, nullptr);
 		m_Buffer = VK_NULL_HANDLE;
 	}
 }
@@ -80,17 +80,17 @@ void Buffer::Create(size_t size)
 	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	createInfo.queueFamilyIndexCount = 0;
 	createInfo.pQueueFamilyIndices = nullptr;
-	K3D_VK_VERIFY(GetGpuRef()->vkCreateBuffer(GetRawDevice(), &createInfo, nullptr, &m_Buffer));
+	K3D_VK_VERIFY(vkCreateBuffer(GetRawDevice(), &createInfo, nullptr, &m_Buffer));
 	//ResourceManager::Allocation alloc = GetDevice()->GetMemoryManager()->AllocateBuffer(m_Buffer, false, m_MemoryBits);
 	//K3D_ASSERT(VK_NULL_HANDLE != alloc.Memory);
 
 	VkMemoryAllocateInfo memAlloc = {};
 	memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	VkMemoryRequirements memReqs;
-	GetGpuRef()->vkGetBufferMemoryRequirements(GetRawDevice(), m_Buffer, &memReqs);
+	vkGetBufferMemoryRequirements(GetRawDevice(), m_Buffer, &memReqs);
 	memAlloc.allocationSize = memReqs.size;
 	GetDevice()->FindMemoryType(memReqs.memoryTypeBits, m_MemoryBits, &memAlloc.memoryTypeIndex);
-	K3D_VK_VERIFY(GetGpuRef()->vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &m_DeviceMem));
+	K3D_VK_VERIFY(vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &m_DeviceMem));
 
 	m_AllocationOffset = 0;
 	m_AllocationSize = memAlloc.allocationSize;
@@ -103,7 +103,7 @@ void Buffer::Create(size_t size)
 	m_BufferInfo.offset = 0;
 	m_BufferInfo.range = m_Size;
 	
-	K3D_VK_VERIFY(GetGpuRef()->vkBindBufferMemory(GetRawDevice(), m_Buffer, m_DeviceMem, m_AllocationOffset));
+	K3D_VK_VERIFY(vkBindBufferMemory(GetRawDevice(), m_Buffer, m_DeviceMem, m_AllocationOffset));
 }
 
 /*Texture::Texture(Device::Ptr pDevice, rhi::TextureDesc const &desc)
@@ -177,7 +177,7 @@ void Texture::CreateResourceView()
 void Texture::CreateRenderTexture(TextureDesc const & desc)
 {
 	m_ImageInfo = ImageInfo::FromRHI(desc);
-	K3D_VK_VERIFY(GetGpuRef()->vkCreateImage(GetRawDevice(), &m_ImageInfo, nullptr, &m_Image));
+	K3D_VK_VERIFY(vkCreateImage(GetRawDevice(), &m_ImageInfo, nullptr, &m_Image));
 
 	//ResourceManager::Allocation alloc = GetDevice()->GetMemoryManager()->AllocateImage(m_Image, false, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 	//K3D_ASSERT(VK_NULL_HANDLE != alloc.Memory);
@@ -185,19 +185,19 @@ void Texture::CreateRenderTexture(TextureDesc const & desc)
 	VkMemoryAllocateInfo memAlloc = {};
 	memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	VkMemoryRequirements memReqs;
-	GetGpuRef()->vkGetImageMemoryRequirements(GetRawDevice(), m_Image, &memReqs);
+	vkGetImageMemoryRequirements(GetRawDevice(), m_Image, &memReqs);
 	memAlloc.allocationSize = memReqs.size;
 	GetDevice()->FindMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memAlloc.memoryTypeIndex);
-	K3D_VK_VERIFY(GetGpuRef()->vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &m_DeviceMem));
+	K3D_VK_VERIFY(vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &m_DeviceMem));
 
 	m_AllocationOffset = 0;
 	m_AllocationSize = memAlloc.allocationSize;
 	m_Size = memAlloc.allocationSize;
 
-	K3D_VK_VERIFY(GetGpuRef()->vkBindImageMemory(GetRawDevice(), m_Image, m_DeviceMem, m_AllocationOffset));
+	K3D_VK_VERIFY(vkBindImageMemory(GetRawDevice(), m_Image, m_DeviceMem, m_AllocationOffset));
 
 	m_ImageViewInfo = ImageViewInfo::From(m_ImageInfo, m_Image);
-	K3D_VK_VERIFY(GetGpuRef()->vkCreateImageView(GetRawDevice(), &m_ImageViewInfo, nullptr, &m_ImageView));
+	K3D_VK_VERIFY(vkCreateImageView(GetRawDevice(), &m_ImageViewInfo, nullptr, &m_ImageView));
 
 	VkImageSubresource subres;
 	subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -206,7 +206,7 @@ void Texture::CreateRenderTexture(TextureDesc const & desc)
 	// query texture memory layout info here
 	// image must have been created with tiling equal to VK_IMAGE_TILING_LINEAR
 	// The aspectMask member of pSubresource must only have a single bit set
-	GetGpuRef()->vkGetImageSubresourceLayout(GetRawDevice(), m_Image, &subres, &m_SubResourceLayout);
+	vkGetImageSubresourceLayout(GetRawDevice(), m_Image, &subres, &m_SubResourceLayout);
 }
 
 void Texture::CreateDepthStencilTexture(TextureDesc const & desc)
@@ -230,7 +230,7 @@ void Texture::CreateSampledTexture(TextureDesc const & desc)
 	
 	m_SubResRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, desc.MipLevels, 0, desc.Layers };
 
-	K3D_VK_VERIFY(GetGpuRef()->vkCreateImage(GetRawDevice(), &m_ImageInfo, nullptr, &m_Image));
+	K3D_VK_VERIFY(vkCreateImage(GetRawDevice(), &m_ImageInfo, nullptr, &m_Image));
 
 	//ResourceManager::Allocation alloc = GetDevice()->GetMemoryManager()->AllocateImage(m_Image, false, m_MemoryBits);
 	//K3D_ASSERT(VK_NULL_HANDLE != alloc.Memory);
@@ -238,16 +238,16 @@ void Texture::CreateSampledTexture(TextureDesc const & desc)
 	VkMemoryAllocateInfo memAlloc = {};
 	memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	VkMemoryRequirements memReqs;
-	GetGpuRef()->vkGetImageMemoryRequirements(GetRawDevice(), m_Image, &memReqs);
+	vkGetImageMemoryRequirements(GetRawDevice(), m_Image, &memReqs);
 	memAlloc.allocationSize = memReqs.size;
 	GetDevice()->FindMemoryType(memReqs.memoryTypeBits, m_MemoryBits, &memAlloc.memoryTypeIndex);
-	K3D_VK_VERIFY(GetGpuRef()->vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &m_DeviceMem));
+	K3D_VK_VERIFY(vkAllocateMemory(GetRawDevice(), &memAlloc, nullptr, &m_DeviceMem));
 
 	m_AllocationOffset = 0;
 	m_AllocationSize = memAlloc.allocationSize;
 	m_Size = memAlloc.allocationSize;
 
-	K3D_VK_VERIFY(GetGpuRef()->vkBindImageMemory(GetRawDevice(), m_Image, m_DeviceMem, m_AllocationOffset));
+	K3D_VK_VERIFY(vkBindImageMemory(GetRawDevice(), m_Image, m_DeviceMem, m_AllocationOffset));
 }
 
 Texture::~Texture()
@@ -256,12 +256,12 @@ Texture::~Texture()
 		return;
 	if (VK_NULL_HANDLE != m_ImageView)
 	{
-		GetGpuRef()->vkDestroyImageView(GetRawDevice(), m_ImageView, nullptr);
+		vkDestroyImageView(GetRawDevice(), m_ImageView, nullptr);
 		m_ImageView = VK_NULL_HANDLE;
 	}
 	if (VK_NULL_HANDLE != m_Image && m_SelfOwn)
 	{
-		GetGpuRef()->vkDestroyImage(GetRawDevice(), m_Image, nullptr);
+		vkDestroyImage(GetRawDevice(), m_Image, nullptr);
 		VKLOG(Info, "Texture Destroyed.. -- %0x.", m_Image);
 		m_Image = VK_NULL_HANDLE;
 	}
@@ -300,8 +300,7 @@ ShaderResourceView::ShaderResourceView(rhi::ResourceViewDesc const &desc, rhi::G
 	m_TextureViewInfo.subresourceRange.layerCount = 1;
 	m_TextureViewInfo.subresourceRange.levelCount = resourceDesc.TextureDesc.MipLevels;
 	m_TextureViewInfo.image = (VkImage)m_Resource->GetResourceLocation();
-	K3D_VK_VERIFY(DynamicPointerCast<Resource>(m_Resource)->GetGpuRef()->
-		vkCreateImageView(DynamicPointerCast<Resource>(m_Resource)->GetRawDevice(), &m_TextureViewInfo, nullptr, &m_TextureView));
+	K3D_VK_VERIFY(vkCreateImageView(DynamicPointerCast<Resource>(m_Resource)->GetRawDevice(), &m_TextureViewInfo, nullptr, &m_TextureView));
 }
 
 ShaderResourceView::~ShaderResourceView()

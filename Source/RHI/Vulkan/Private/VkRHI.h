@@ -157,7 +157,7 @@ public:
 	PtrCmdAlloc					NewCommandAllocator(bool transient);
 	bool						FindMemoryType(uint32 typeBits, VkFlags requirementsMask, uint32 *typeIndex) const;
 	PtrSemaphore				NewSemaphore();
-	void						WaitIdle() override { m_Gpu->vkDeviceWaitIdle(m_Device); }
+	void						WaitIdle() override { vkDeviceWaitIdle(m_Device); }
 
 	uint32						GetQueueCount() const { return m_Gpu->m_QueueProps.Count(); }
 	SpRenderpass const &		GetTopPass() const { return m_PendingPass.back(); }
@@ -223,7 +223,7 @@ public:
 	{
 		if (pDevice) 
 		{
-			K3D_VK_VERIFY(GetGpuRef()->vkCreateFence(GetRawDevice(), &info, nullptr, &m_Fence));
+			K3D_VK_VERIFY(vkCreateFence(GetRawDevice(), &info, nullptr, &m_Fence));
 		}
 	}
 
@@ -231,7 +231,7 @@ public:
 	{
 		if (m_Fence)
 		{
-			GetGpuRef()->vkDestroyFence(GetRawDevice(), m_Fence, nullptr);
+			vkDestroyFence(GetRawDevice(), m_Fence, nullptr);
 			VKLOG(Info, "Fence Destroyed. -- %0x.", m_Fence);
 			m_Fence = VK_NULL_HANDLE;
 		}
@@ -241,13 +241,13 @@ public:
 
 	bool IsSignaled()
 	{
-		return VK_SUCCESS== GetGpuRef()->vkGetFenceStatus(GetRawDevice(), m_Fence);
+		return VK_SUCCESS== vkGetFenceStatus(GetRawDevice(), m_Fence);
 	}
 
-	void Reset() override { GetGpuRef()->vkResetFences(GetRawDevice(), 1, &m_Fence); }
+	void Reset() override { vkResetFences(GetRawDevice(), 1, &m_Fence); }
 	void WaitFor(uint64 time) override 
 	{
-		GetGpuRef()->vkWaitForFences(GetRawDevice(), 1, &m_Fence, VK_TRUE, time);
+		vkWaitForFences(GetRawDevice(), 1, &m_Fence, VK_TRUE, time);
 	}
 private:
 	friend class SwapChain;
@@ -315,7 +315,9 @@ class DescriptorSet : public DeviceChild, public rhi::IDescriptor
 public:
 	static DescriptorSet*	CreateDescSet(DescriptorAllocRef descriptorPool, VkDescriptorSetLayout layout, BindingArray const & bindings, Device::Ptr pDevice);
 	virtual					~DescriptorSet();
+	void 					Update(uint32 bindSet, rhi::SamplerRef) override;
 	void					Update(uint32 bindSet, rhi::GpuResourceRef) override;
+	uint32					GetSlotNum() const override;
 	VkDescriptorSet			GetNativeHandle() const { return m_DescriptorSet; }
 
 private:
@@ -344,7 +346,7 @@ public:
 	VkDeviceMemory				GetDeviceMemory() const { return m_DeviceMem; }
 
 	Resource::Ptr				Map(uint64 offset, uint64 size) override;
-	void						UnMap() override { GetGpuRef()->vkUnmapMemory(GetRawDevice(), m_DeviceMem); }
+	void						UnMap() override { vkUnmapMemory(GetRawDevice(), m_DeviceMem); }
 	uint64						GetResourceSize() const override { return m_Size; }
 	rhi::ResourceDesc			GetResourceDesc() const override { return m_Desc; }
 

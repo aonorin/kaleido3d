@@ -26,14 +26,14 @@ Sampler::Sampler(Device::Ptr pDevice, rhi::SamplerState const & samplerDesc)
 		m_SamplerCreateInfo.maxAnisotropy = samplerDesc.MaxAnistropy;
 		m_SamplerCreateInfo.anisotropyEnable = VK_TRUE;
 		m_SamplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE; // cannot convert...
-		GetGpuRef()->vkCreateSampler(GetRawDevice(), &m_SamplerCreateInfo, nullptr, &m_Sampler);
+		vkCreateSampler(GetRawDevice(), &m_SamplerCreateInfo, nullptr, &m_Sampler);
 	}
 }
 
 Sampler::~Sampler()
 {
 	VKLOG(Info, "Sampler-Destroying ...");
-	GetGpuRef()->vkDestroySampler(GetRawDevice(), m_Sampler, nullptr);
+	vkDestroySampler(GetRawDevice(), m_Sampler, nullptr);
 }
 
 rhi::SamplerState Sampler::GetSamplerDesc() const

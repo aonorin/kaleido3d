@@ -3,7 +3,7 @@
 #ifndef __DynVulkanLoader_h__
 #define __DynVulkanLoader_h__
 
-#define VK_NO_PROTOTYPES
+//#define VK_NO_PROTOTYPES
 #if K3DPLATFORM_OS_WIN
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #elif K3DPLATFORM_OS_ANDROID
@@ -12,6 +12,9 @@
 #include <vulkan/vulkan.h>
 #include <stdlib.h>
 #include <KTL/SharedPtr.hpp>
+
+#ifdef VK_NO_PROTOTYPES
+
 #define _VK_GET_INSTANCE_POINTER_(instance, funcName) vk##funcName = (PFN_vk##funcName)vkGetInstanceProcAddr(instance, "vk" K3D_STRINGIFY(funcName));
 
 // Macro to get a procedure address based on a vulkan instance
@@ -184,6 +187,8 @@ _PREDEF_VK_FUNC_(CmdNextSubpass);
 _PREDEF_VK_FUNC_(CmdEndRenderPass);
 _PREDEF_VK_FUNC_(CmdExecuteCommands);
 _PREDEF_VK_FUNC_(AcquireNextImageKHR);
+
+#endif
 
 namespace dynlib
 {

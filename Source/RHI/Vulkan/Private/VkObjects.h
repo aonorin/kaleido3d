@@ -618,6 +618,7 @@ public:
 
 	Instance* GetInstance() const { return m_Inst; }
 
+#ifdef VK_NO_PROTOTYPES
 	__VK_DEVICE_PROC__(DestroyDevice);
 	__VK_DEVICE_PROC__(GetDeviceQueue);
 	__VK_DEVICE_PROC__(QueueSubmit);
@@ -743,6 +744,7 @@ public:
 	__VK_DEVICE_PROC__(CreateSwapchainKHR);
 	__VK_DEVICE_PROC__(DestroySwapchainKHR);
 	__VK_DEVICE_PROC__(GetSwapchainImagesKHR);
+#endif
 
 	VkDevice								m_LogicalDevice;
 
@@ -797,6 +799,7 @@ public:
 	bool	WithValidation() const { return m_EnableValidation; }
 	void	AppendLogicalDevice(rhi::DeviceRef logicalDevice);
 
+#ifdef VK_NO_PROTOTYPES
 	VkResult CreateSurfaceKHR(const
 #if K3DPLATFORM_OS_WIN
 							  VkWin32SurfaceCreateInfoKHR
@@ -816,9 +819,11 @@ public:
 	{
 		fpDestroySurfaceKHR(m_Instance, surface, pAllocator);
 	}
+#endif
 
 	friend class Gpu;
 	friend class Device;
+	friend class SwapChain;
 	friend struct RHIRoot;
 private:
 	void LoadGlobalProcs();
@@ -847,11 +852,12 @@ private:
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		fpGetPhysicalDeviceSurfaceFormatsKHR;
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	fpGetPhysicalDeviceSurfacePresentModesKHR;
 
-
+#ifdef VK_NO_PROTOTYPES
 	__VK_GLOBAL_LEVEL_PROC__(CreateInstance);
 	__VK_GLOBAL_LEVEL_PROC__(EnumerateInstanceExtensionProperties);
 	__VK_GLOBAL_LEVEL_PROC__(EnumerateInstanceLayerProperties);
 	__VK_GLOBAL_LEVEL_PROC__(GetInstanceProcAddr);
+	__VK_GLOBAL_LEVEL_PROC__(DestroyInstance);
 
 	__VK_INSTANCE_LEVEL_PROC__(CreateDebugReportCallbackEXT);
 	__VK_INSTANCE_LEVEL_PROC__(DestroyDebugReportCallbackEXT);
@@ -871,9 +877,9 @@ private:
 	__VK_INSTANCE_LEVEL_PROC__(GetPhysicalDeviceFormatProperties);
 	__VK_INSTANCE_LEVEL_PROC__(CreateDevice);
 	__VK_INSTANCE_LEVEL_PROC__(GetDeviceProcAddr);
-	__VK_INSTANCE_LEVEL_PROC__(DestroyInstance);
 
 	dynlib::LibRef	m_VulkanLib;
+#endif
 };
 
 using InstanceRef = SharedPtr<Instance>;

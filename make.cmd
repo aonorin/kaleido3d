@@ -8,7 +8,7 @@ goto BUILD_BY_CMAKE
 
 :CHECK_DEPENDENCIES
 echo Checkout Dependencies From Github
-git clone https://github.com/Tomicyo/kaleido3d_dep_prebuilt.git -b win64_debug Source\ThirdParty_Prebuilt\Win64\Debug
+git clone https://github.com/Tomicyo/kaleido3d_dep_prebuilt.git -b win64_Debug Source\ThirdParty_Prebuilt\Win64\Debug
 goto BUILD_BY_CMAKE
 
 
@@ -37,9 +37,8 @@ if defined VS120COMNTOOLS (goto MS2013Build) else (goto NotSupport)
 
 :MS2015Build 
 echo Build By Visual Studio 2015
-cmake -G"Visual Studio 14 2015 Win64" -HSource -BBuildWin64 -DCMAKE_BUILD_TYPE=Debug
-call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
-cmake --build BuildWin64 --config Debug
+cmake -G"Visual Studio 14 2015 Win64" -HSource -BBuild\Win64\Debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build Build\Win64\Debug --config Debug
 goto End
 
 :NotSupport
