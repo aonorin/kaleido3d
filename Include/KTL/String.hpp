@@ -79,14 +79,14 @@ public:
 		MoveAssign(Move(rhs));
 	}
 
-	virtual ~StringBase()
+	~StringBase()
 	{
 		if (m_pStringData)
 		{
 			Deallocate();
-			m_pStringData = nullptr;
-			m_StringLength = 0;
 		}
+		m_pStringData = nullptr;
+		m_StringLength = 0;
 	}
 
 	uint64				Length() const { return m_StringLength; }
@@ -290,9 +290,12 @@ operator+(StringBase<BaseChar, Allocator> const& lhs, StringBase<BaseChar, Alloc
 }
 
 template <typename BaseChar, typename Allocator>
-KFORCE_INLINE bool operator==(StringBase<BaseChar, Allocator> const& lhs, StringBase<BaseChar, Allocator> const& rhs)
+KFORCE_INLINE bool operator==(StringBase<BaseChar, Allocator> const& lhs, StringBase<BaseChar, Allocator> const& rhs) K3D_NOEXCEPT
 {
-	return ((lhs.Length() == rhs.Length()) && (memcmp(lhs.Data(), rhs.Data(), lhs.Length() * sizeof(BaseChar)) == 0));
+	if (&lhs == &rhs)
+		return true;
+	return ((lhs.Length() == rhs.Length())
+		&& (memcmp(lhs.Data(), rhs.Data(), lhs.Length() * sizeof(BaseChar)) == 0));
 }
 
 template <typename BaseChar, typename Allocator>

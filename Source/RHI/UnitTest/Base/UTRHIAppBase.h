@@ -33,16 +33,6 @@ public:
 
 	virtual ~RHIAppBase() override
 	{
-		if(m_ShaderModule)
-		{
-			delete m_ShaderModule;
-			m_ShaderModule = nullptr;
-		}
-        if(m_RHIModule)
-        {
-            //delete m_RHIModule;
-            //m_RHIModule = nullptr;
-        }
 	}
 
 	virtual bool OnInit() override
@@ -59,9 +49,9 @@ public:
 	void Compile(const char * shaderPath, rhi::EShaderType const & type, rhi::ShaderBundle & shader);
 
 protected:
-	rhi::IShModule* 		m_ShaderModule;
-	rhi::IShCompiler::Ptr	m_RHICompiler;
-    IModule*                m_RHIModule;
+	SharedPtr<rhi::IShModule> 	m_ShaderModule;
+	rhi::IShCompiler::Ptr		m_RHICompiler;
+    SharedPtr<IModule>			m_RHIModule;
     
     rhi::DeviceRef          m_pDevice;
     rhi::RenderViewportRef	m_pViewport;
@@ -80,7 +70,7 @@ private:
 
 void RHIAppBase::LoadGlslangCompiler()
 {
-	m_ShaderModule = (rhi::IShModule*)ACQUIRE_PLUGIN(ShaderCompiler);
+	m_ShaderModule = k3d::StaticPointerCast<rhi::IShModule>(ACQUIRE_PLUGIN(ShaderCompiler));
 	if (m_ShaderModule)
 	{
 #if K3DPLATFORM_OS_MAC
@@ -94,14 +84,14 @@ void RHIAppBase::LoadGlslangCompiler()
 void RHIAppBase::LoadRHI()
 {
 #if !(K3DPLATFORM_OS_MAC || K3DPLATFORM_OS_IOS)
-    m_RHIModule = ACQUIRE_PLUGIN(RHI_Vulkan);
-    IVkRHI* pRHI = static_cast<IVkRHI*>(m_RHIModule);
+    m_RHIModule = SharedPtr<IModule>( ACQUIRE_PLUGIN(RHI_Vulkan) );
+    auto pRHI = StaticPointerCast<IVkRHI>(m_RHIModule);
     pRHI->Initialize("RenderContext", true);
     pRHI->Start();
     m_pDevice = pRHI->GetPrimaryDevice();
 #else
     m_RHIModule = ACQUIRE_PLUGIN(RHI_Metal);
-    IMetalRHI* pRHI = static_cast<IMetalRHI*>(m_RHIModule);
+    auto pRHI = StaticPointerCast<IMetalRHI>(m_RHIModule);
     if(pRHI)
     {
         pRHI->Start();

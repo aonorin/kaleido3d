@@ -51,10 +51,9 @@ protected:
 
 private:
 
-	std::unique_ptr<CubeMesh>			m_CubeMesh;
-
+	SharedPtr<CubeMesh>					m_CubeMesh;
 	rhi::GpuResourceRef					m_ConstBuffer;
-	TextureObject*						m_Texture;
+	SharedPtr<TextureObject>			m_Texture;
 	ConstantBuffer						m_HostBuffer;
 
 	rhi::PipelineStateObjectRef			m_pPso;
@@ -194,7 +193,7 @@ void CubeMesh::Upload()
 	cmd->End();
 	cmd->Execute(true);
 //	m_pDevice->WaitIdle();
-	SetLoc(vbuf->GetResourceLocation());
+	SetLoc(vbuf->GetLocation());
 	KLOG(Info, TCubeMesh, "finish buffer upload..");
 }
 
@@ -229,24 +228,24 @@ void TCubeUnitTest::LoadTexture()
  		uint64 length = textureFile->GetLength();
 		uint8* data = new uint8[length];
 		textureFile->Read(data, length);
-		m_Texture = new TextureObject(m_pDevice, data, false);
+		m_Texture = MakeShared<TextureObject>(m_pDevice, data, false);
 		auto texStageBuf = CreateStageBuffer(m_Texture->GetSize());
 		m_Texture->MapIntoBuffer(texStageBuf);
 		m_Texture->CopyAndInitTexture(texStageBuf);
 		rhi::ResourceViewDesc viewDesc;
-		auto srv = m_pDevice->NewShaderResourceView(m_Texture->GetResource(), viewDesc);
-		auto texure = DynamicPointerCast<rhi::ITexture>(m_Texture->GetResource());
-		texure->SetResourceView(srv);
+		auto srv = m_pDevice->NewShaderResourceView(m_Texture->GetResource(), viewDesc);	// TODO: Fix circle ref of `m_Texture->m_Resource`
+		auto texure = StaticPointerCast<rhi::ITexture>(m_Texture->GetResource());			//
+		texure->SetResourceView(Move(srv));													// here
 		rhi::SamplerState samplerDesc;
 		auto sampler2D = m_pDevice->NewSampler(samplerDesc);
-		texure->BindSampler(sampler2D);
+		texure->BindSampler(Move(sampler2D));
 	}
 }
 
 void TCubeUnitTest::PrepareResource()
 {
 	KLOG(Info, Test, __K3D_FUNC__);
-	m_CubeMesh = std::make_unique<CubeMesh>(m_pDevice);
+	m_CubeMesh = MakeShared<CubeMesh>(m_pDevice);
 	m_CubeMesh->Upload();
 	LoadTexture();
 	rhi::ResourceDesc desc;
@@ -304,14 +303,6 @@ void TCubeUnitTest::PrepareCommandBuffer()
 void TCubeUnitTest::OnDestroy()
 {
 	m_pFence->WaitFor(1000);
-	if (m_Texture)
-	{
-		delete m_Texture;
-		m_Texture = nullptr;
-	}
-
-	m_CubeMesh->~CubeMesh();
-
 	RHIAppBase::OnDestroy();
 }
 

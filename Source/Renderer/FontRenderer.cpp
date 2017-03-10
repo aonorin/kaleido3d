@@ -100,7 +100,7 @@ namespace render
 		texDesc.TextureDesc.Depth = 1;
 		m_Texture = ::k3d::DynamicPointerCast<rhi::ITexture>(device->NewGpuResource(texDesc));
 
-		uint64 sz = m_Texture->GetResourceSize();
+		uint64 sz = m_Texture->GetSize();
 		void * pData = m_Texture->Map(0, sz);
 		rhi::SubResourceLayout layout = {};
 		rhi::TextureResourceSpec spec = { rhi::ETAF_COLOR,0,0 };
@@ -183,7 +183,7 @@ namespace render
 
 	void FontRenderer::InitPSO()
 	{
-		rhi::IShModule* shMod = (rhi::IShModule*)ACQUIRE_PLUGIN(ShaderCompiler);
+		auto shMod = k3d::StaticPointerCast<rhi::IShModule>(ACQUIRE_PLUGIN(ShaderCompiler));
 		if (!shMod)
 			return;
 		auto glslc = shMod->CreateShaderCompiler(rhi::ERHI_Vulkan);

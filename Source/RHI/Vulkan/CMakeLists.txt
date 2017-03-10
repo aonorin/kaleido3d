@@ -28,11 +28,8 @@ set(RHI_IMPL_SRCS
 	Private/VkCommandContext.cpp
 	Private/VkResource.cpp
 	Private/VkPipelineState.cpp
-	Private/VkSampler.cpp
-	Private/VkPipelineLayout.cpp
 	Private/VkDescriptor.cpp
 	Private/VkSwapChain.cpp
-	Private/VkFrameBuffer.cpp
 	Private/VkRenderPass.cpp
 	Private/VkDebug.cpp
 	Private/VkImpl.cpp

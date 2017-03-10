@@ -169,6 +169,7 @@ namespace Os
 				if (m_OnwerShipGot)
 				{
 					delete m_Mutex;
+					m_Mutex = nullptr;
 				}
 			}
 		private:

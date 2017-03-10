@@ -30,12 +30,12 @@ namespace render
 		m_Height = h;
 		m_RhiType = type;
 #if !(K3DPLATFORM_OS_MAC || K3DPLATFORM_OS_IOS)
-		IVkRHI* pVkRHI = (IVkRHI*)ACQUIRE_PLUGIN(RHI_Vulkan);
+		auto pVkRHI = k3d::StaticPointerCast<IVkRHI>(ACQUIRE_PLUGIN(RHI_Vulkan));
 		pVkRHI->Initialize("RenderContext", true);
 		pVkRHI->Start();
 		m_pDevice = pVkRHI->GetPrimaryDevice();
 #else 
-        IMetalRHI* pMtlRHI = (IMetalRHI*)ACQUIRE_PLUGIN(RHI_Metal);
+        auto pMtlRHI = k3d::StaticPointerCast<IMetalRHI>(ACQUIRE_PLUGIN(RHI_Metal));
         if(pMtlRHI)
         {
             pMtlRHI->Start();

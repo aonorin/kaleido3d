@@ -69,6 +69,7 @@ Current Status
 	* [ ] Multi-Thread Rendering
 	* [ ] Multi-GPU/CrossAdapter Rendering
 	* [x] Cross Shader Language Compiler
+	* [ ] Hand-writing Recognition CNN Sample (GPGPU)
 
 ---
 
@@ -148,14 +149,16 @@ Samples
 
 Contact
 =========
-> If you have any suggestion, please contact me via [**email**](mailto:dsotsen@gmail.com). 
+
+If you have any suggestion, please contact me via [**email**][12] . 
+
 
 Discuss [![Join the chat at https://gitter.im/TsinStudio/kaleido3d](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TsinStudio/kaleido3d?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 =========
 
 
 
-Please join the [gitter chat](https://gitter.im/TsinStudio/kaleido3d) to discuss on this project.
+Please join the [gitter chat](https://gitter.im/TsinStudio/kaleido3d) or [QQ Group][13] to discuss on this project.
 Framework development discussions and thorough bug reports are collected on [Issues](https://github.com/TsinStudio/kaleido3d/issues).
 
 
@@ -171,3 +174,5 @@ Framework development discussions and thorough bug reports are collected on [Iss
 [9]: https://vulkan.lunarg.com/
 [10]: https://github.com/KhronosGroup/SPIRV-Cross
 [11]: https://www.freetype.org
+[12]: mailto:dsotsen@gmail.com
+[13]: https://jq.qq.com/?_wv=1027&k=45tL869

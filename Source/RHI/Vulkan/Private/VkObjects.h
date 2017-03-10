@@ -5,10 +5,49 @@
 
 K3D_VK_BEGIN
 
+template <class TVkResObj>
+struct ResTrait
+{
+};
+
+template <>
+struct ResTrait<VkBuffer>
+{
+	typedef VkBufferView			View;
+	typedef VkBufferUsageFlags		UsageFlags;
+	typedef VkBufferCreateInfo		CreateInfo;
+	typedef VkBufferViewCreateInfo	ViewCreateInfo;
+	typedef VkDescriptorBufferInfo	DescriptorInfo;
+	static decltype(vkCreateBufferView)* CreateView;
+	static decltype(vkDestroyBufferView)* DestroyView;
+	static decltype(vkCreateBuffer)* Create;
+	static decltype(vkDestroyBuffer)* Destroy;
+	static decltype(vkGetBufferMemoryRequirements)* GetMemoryInfo;
+	static decltype(vkBindBufferMemory)* BindMemory;
+};
+
+template <>
+struct ResTrait<VkImage>
+{
+	typedef VkImageView				View;
+	typedef VkImageUsageFlags		UsageFlags;
+	typedef VkImageCreateInfo		CreateInfo;
+	typedef VkImageViewCreateInfo	ViewCreateInfo;
+	typedef VkDescriptorImageInfo	DescriptorInfo;
+	static decltype(vkCreateImageView)* CreateView;
+	static decltype(vkDestroyImageView)* DestroyView;
+	static decltype(vkCreateImage)* Create;
+	static decltype(vkDestroyImage)* Destroy;
+	static decltype(vkGetImageMemoryRequirements)* GetMemoryInfo;
+	static decltype(vkBindImageMemory)* BindMemory;
+};
+
 struct ImageInfo;
 
 class Gpu;
 using GpuRef = SharedPtr<Gpu>;
+class Instance;
+using InstanceRef = SharedPtr<Instance>;
 
 class RenderTargetLayout
 {
@@ -575,14 +614,14 @@ private:
 class CommandBufferManager
 {
 public:
-	CommandBufferManager(GpuRef gpu, VkCommandBufferLevel bufferLevel, unsigned graphicsQueueIndex);
+	CommandBufferManager(VkDevice pDevice, VkCommandBufferLevel bufferLevel, unsigned graphicsQueueIndex);
 	~CommandBufferManager();
 	void			Destroy();
 	VkCommandBuffer RequestCommandBuffer();
 	void			BeginFrame();
 
 private:
-	GpuRef							m_Gpu;
+	VkDevice						m_Device = VK_NULL_HANDLE;
 	VkCommandPool					m_Pool = VK_NULL_HANDLE;
 	std::vector<VkCommandBuffer>	m_Buffers;
 	VkCommandBufferLevel			m_CommandBufferLevel;
@@ -598,7 +637,7 @@ class Instance;
 
 #define __VK_DEVICE_PROC__(name) PFN_vk##name vk##name = NULL
 
-class Gpu
+class Gpu : public EnableSharedFromThis<Gpu>
 {
 public:
 	~Gpu();
@@ -616,7 +655,7 @@ public:
 	VkResult CreateCommdPool(const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool);
 	VkResult AllocateCommandBuffers(const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers);
 
-	Instance* GetInstance() const { return m_Inst; }
+	InstanceRef GetInstance() const { return m_Inst; }
 
 #ifdef VK_NO_PROTOTYPES
 	__VK_DEVICE_PROC__(DestroyDevice);
@@ -744,6 +783,11 @@ public:
 	__VK_DEVICE_PROC__(CreateSwapchainKHR);
 	__VK_DEVICE_PROC__(DestroySwapchainKHR);
 	__VK_DEVICE_PROC__(GetSwapchainImagesKHR);
+
+	PFN_vkDestroyDevice						fpDestroyDevice = NULL;
+	PFN_vkFreeCommandBuffers				fpFreeCommandBuffers = NULL;
+	PFN_vkCreateCommandPool					fpCreateCommandPool = NULL;
+	PFN_vkAllocateCommandBuffers			fpAllocateCommandBuffers = NULL;
 #endif
 
 	VkDevice								m_LogicalDevice;
@@ -753,12 +797,12 @@ private:
 	friend class Device;
 	friend class DeviceAdapter;
 	
-	Gpu(VkPhysicalDevice const&, Instance* inst);
+	Gpu(VkPhysicalDevice const&, InstanceRef const& inst);
 
 	void QuerySupportQueues();
 	void LoadDeviceProcs();
 
-	Instance*								m_Inst;
+	InstanceRef								m_Inst;
 	VkPhysicalDevice						m_PhysicalGpu;
 	VkPhysicalDeviceProperties				m_Prop;
 	VkPhysicalDeviceMemoryProperties		m_MemProp;
@@ -766,11 +810,6 @@ private:
 	uint32									m_ComputeQueueIndex = 0;
 	uint32									m_CopyQueueIndex = 0;
 	DynArray<VkQueueFamilyProperties>		m_QueueProps;
-
-	PFN_vkDestroyDevice						fpDestroyDevice = NULL;
-	PFN_vkFreeCommandBuffers				fpFreeCommandBuffers = NULL;
-	PFN_vkCreateCommandPool					fpCreateCommandPool = NULL;
-	PFN_vkAllocateCommandBuffers			fpAllocateCommandBuffers = NULL;
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
@@ -783,21 +822,23 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
 #define __VK_GLOBAL_LEVEL_PROC__(name)		PFN_vk##name	gp##name = NULL;
 #define __VK_INSTANCE_LEVEL_PROC__(name)	PFN_vk##name	fp##name = NULL
 
-class Instance
+class Instance : public EnableSharedFromThis<Instance>
 {
 public:
 	Instance(const ::k3d::String& engineName, const ::k3d::String& appName, bool enableValidation = true);
 	~Instance();
 
-	uint32	GetHostGpuCount() const { return m_Gpus.Count(); }
-	GpuRef	GetHostGpuByIndex(uint32 i) const { return m_Gpus[i]; }
-	rhi::DeviceRef GetDeviceByIndex(uint32 i) const { return m_LogicDevices[i]; }
+	//uint32	GetHostGpuCount() const { return m_Gpus.Count(); }
+	//GpuRef	GetHostGpuByIndex(uint32 i) const { return m_Gpus[i]; }
+	//rhi::DeviceRef GetDeviceByIndex(uint32 i) const { return m_LogicDevices[i]; }
 
 	void	SetupDebugging(VkDebugReportFlagsEXT flags, PFN_vkDebugReportCallbackEXT callBack);
 	void	FreeDebugCallback();
 
 	bool	WithValidation() const { return m_EnableValidation; }
-	void	AppendLogicalDevice(rhi::DeviceRef logicalDevice);
+	//void	AppendLogicalDevice(rhi::DeviceRef logicalDevice);
+
+	::k3d::DynArray<GpuRef> EnumGpus();
 
 #ifdef VK_NO_PROTOTYPES
 	VkResult CreateSurfaceKHR(const
@@ -825,12 +866,11 @@ public:
 	friend class Device;
 	friend class SwapChain;
 	friend struct RHIRoot;
+
 private:
 	void LoadGlobalProcs();
 	void EnumExtsAndLayers();
 	void ExtractEnabledExtsAndLayers();
-
-	void EnumGpus();
 	void LoadInstanceProcs();
 
 	bool							m_EnableValidation;
@@ -841,18 +881,17 @@ private:
 
 	VkInstance								m_Instance;
 	VkDebugReportCallbackEXT				m_DebugMsgCallback;
-	::k3d::DynArray<GpuRef>					m_Gpus;
-	::k3d::DynArray<rhi::DeviceAdapterRef>	m_GpuAdapters;
-	::k3d::DynArray<rhi::DeviceRef>			m_LogicDevices;
+	//::k3d::DynArray<GpuRef>					m_Gpus;
+	//::k3d::DynArray<rhi::DeviceAdapterRef>	m_GpuAdapters;
+	//::k3d::DynArray<rhi::DeviceRef>			m_LogicDevices;
 
-	//private functions 
+#ifdef VK_NO_PROTOTYPES
 
 	PFN_vkGetPhysicalDeviceSurfaceSupportKHR		fpGetPhysicalDeviceSurfaceSupportKHR;
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		fpGetPhysicalDeviceSurfaceFormatsKHR;
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	fpGetPhysicalDeviceSurfacePresentModesKHR;
 
-#ifdef VK_NO_PROTOTYPES
 	__VK_GLOBAL_LEVEL_PROC__(CreateInstance);
 	__VK_GLOBAL_LEVEL_PROC__(EnumerateInstanceExtensionProperties);
 	__VK_GLOBAL_LEVEL_PROC__(EnumerateInstanceLayerProperties);
@@ -881,8 +920,6 @@ private:
 	dynlib::LibRef	m_VulkanLib;
 #endif
 };
-
-using InstanceRef = SharedPtr<Instance>;
 
 K3D_VK_END
 

@@ -279,9 +279,9 @@ void VkObjectAllocator::Free(void * pMemory)
 }
 
 
-CommandBufferManager::CommandBufferManager(GpuRef gpu, VkCommandBufferLevel bufferLevel,
+CommandBufferManager::CommandBufferManager(VkDevice gpu, VkCommandBufferLevel bufferLevel,
 	unsigned graphicsQueueIndex)
-	: m_Gpu(gpu)
+	: m_Device(gpu)
 	, m_CommandBufferLevel(bufferLevel)
 	, m_Count(0)
 {
@@ -289,7 +289,7 @@ CommandBufferManager::CommandBufferManager(GpuRef gpu, VkCommandBufferLevel buff
 	VkCommandPoolCreateInfo info = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 	info.queueFamilyIndex = graphicsQueueIndex;
 	info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	K3D_VK_VERIFY(m_Gpu->CreateCommdPool(&info, nullptr, &m_Pool));
+	K3D_VK_VERIFY(vkCreateCommandPool(m_Device, &info, nullptr, &m_Pool));
 }
 
 CommandBufferManager::~CommandBufferManager()
@@ -301,9 +301,10 @@ void CommandBufferManager::Destroy()
 {
 	if (!m_Pool)
 		return;
+	vkDeviceWaitIdle(m_Device);
 	VKLOG(Info, "CommandBufferManager destroy. -- 0x%0x.", m_Pool);
-	m_Gpu->FreeCommandBuffers(m_Pool, m_Buffers.size(), m_Buffers.data());
-	//vkDestroyCommandPool(m_Device, m_Pool, nullptr);
+	vkFreeCommandBuffers(m_Device, m_Pool, m_Buffers.size(), m_Buffers.data());
+	vkDestroyCommandPool(m_Device, m_Pool, nullptr);
 	m_Pool = VK_NULL_HANDLE;
 }
 
@@ -327,7 +328,7 @@ VkCommandBuffer CommandBufferManager::RequestCommandBuffer()
 		info.commandPool = m_Pool;
 		info.level = m_CommandBufferLevel;
 		info.commandBufferCount = 1;
-		K3D_VK_VERIFY(m_Gpu->AllocateCommandBuffers(&info, &ret));
+		K3D_VK_VERIFY(vkAllocateCommandBuffers(m_Device, &info, &ret));
 		m_Buffers.push_back(ret);
 
 		m_Count++;
@@ -336,7 +337,7 @@ VkCommandBuffer CommandBufferManager::RequestCommandBuffer()
 	return ret;
 }
 
-Gpu::Gpu(VkPhysicalDevice const& gpu, Instance* pInst)
+Gpu::Gpu(VkPhysicalDevice const& gpu, InstanceRef const& pInst)
 	: m_Inst(pInst)
 	, m_LogicalDevice(VK_NULL_HANDLE)
 	, m_PhysicalGpu(gpu)
@@ -545,12 +546,11 @@ void Gpu::LoadDeviceProcs()
 
 Gpu::~Gpu()
 {
+	VKLOG(Info, "Gpu Destroyed....");
 	if (m_PhysicalGpu)
 	{
 		m_PhysicalGpu = VK_NULL_HANDLE;
 	}
-
-	fpDestroyDevice = nullptr;
 }
 
 VkDevice Gpu::CreateLogicDevice(bool enableValidation)
@@ -715,21 +715,21 @@ Instance::Instance(const::k3d::String & engineName, const::k3d::String & appName
 Instance::~Instance()
 {
 	VKLOG(Info, "Instance Destroying...  -- %0x. (tid:%d)", m_Instance, Os::Thread::GetId());
-	if (!m_Gpus.empty())
-	{
-		m_Gpus.~DynArray();
-	}
-	if (!m_GpuAdapters.empty())
-	{
-		m_GpuAdapters.~DynArray();
-	}
-	if (!m_LogicDevices.empty())
-	{
-		m_LogicDevices.~DynArray();
-	}
+	//if (!m_Gpus.empty())
+	//{
+	//	m_Gpus.~DynArray();
+	//}
+	//if (!m_GpuAdapters.empty())
+	//{
+	//	m_GpuAdapters.~DynArray();
+	//}
+	//if (!m_LogicDevices.empty())
+	//{
+	//	m_LogicDevices.~DynArray();
+	//}
 	if (m_Instance)
 	{
-		//FreeDebugCallback();
+		FreeDebugCallback();
 		vkDestroyInstance(m_Instance, nullptr);
 		VKLOG(Info, "Instance Destroyed .  -- %0x.", m_Instance);
 		m_Instance = VK_NULL_HANDLE;
@@ -855,11 +855,6 @@ void Instance::LoadInstanceProcs()
 #endif
 	GET_INSTANCE_PROC_ADDR(m_Instance, DestroySurfaceKHR);
 #endif
-}
-
-void Instance::AppendLogicalDevice(rhi::DeviceRef logicalDevice)
-{
-	m_LogicDevices.Append(logicalDevice);
 }
 
 K3D_VK_END

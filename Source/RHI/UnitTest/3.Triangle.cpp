@@ -155,8 +155,8 @@ void TriangleMesh::Upload()
 	cmd->End();
 	cmd->Execute(true);
 //	m_m_pDevice->WaitIdle();
-	uint64 vboLoc = vbuf->GetResourceLocation();
-	uint64 iboLoc = ibuf->GetResourceLocation();
+	uint64 vboLoc = vbuf->GetLocation();
+	uint64 iboLoc = ibuf->GetLocation();
 	SetLoc(iboLoc, vboLoc);
 	KLOG(Info, TriangleMesh, "finish buffer upload..");
 }

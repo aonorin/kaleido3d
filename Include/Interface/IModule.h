@@ -1,5 +1,6 @@
 #pragma once
 #include "Config/Config.h"
+#include <KTL/SharedPtr.hpp>
 
 #if K3DPLATFORM_OS_WIN
 #define PLUGIN_API_DECLARE  __declspec(dllexport)
@@ -47,7 +48,7 @@ extern "C" ::k3d::IModule *Get##ModuleName##Module()
 #if BUILD_STATIC_PLUGIN
 #define ACQUIRE_PLUGIN(PLUGIN) Get##PLUGIN##Module();
 #else
-#define ACQUIRE_PLUGIN(PLUGIN) k3d::GlobalModuleManager.FindModule(#PLUGIN);
+#define ACQUIRE_PLUGIN(PLUGIN) k3d::GlobalModuleManager.FindModule(#PLUGIN)
 #endif
 
 K3D_COMMON_NS
@@ -64,4 +65,6 @@ K3D_COMMON_NS
 		virtual const char * Name() = 0;
 		virtual ~IModule() {}
 	};
+
+	typedef SharedPtr<IModule> ModuleRef;
 }

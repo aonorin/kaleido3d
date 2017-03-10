@@ -12,10 +12,10 @@ namespace k3d
 	public:
 		~ModuleManager();
 
-		void AddModule(const char* name, IModule* module);
+		void AddModule(const char* name, ModuleRef module);
 		void RemoveModule(const char * name);
 		bool LoadModule(const char * moduleName);
-		IModule* FindModule(const char * moduleName);
+		ModuleRef FindModule(const char * moduleName);
 
 		ModuleManager();
 

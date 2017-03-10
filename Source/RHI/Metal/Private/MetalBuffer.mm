@@ -35,27 +35,22 @@ void Buffer::UnMap()
 #endif
 }
 
-uint64 Buffer::GetResourceLocation() const
+uint64 Buffer::GetLocation() const
 {
     return (uint64)m_Buf;
 }
 
-rhi::ResourceDesc Buffer::GetResourceDesc() const
+rhi::ResourceDesc Buffer::GetDesc() const
 {
     return m_Desc;
 }
 
-rhi::EResourceState Buffer::GetUsageState() const
+rhi::EResourceState Buffer::GetState() const
 {
     return rhi::ERS_Unknown;
 }
 
-rhi::EGpuResourceType Buffer::GetResourceType() const
-{
-    return rhi::EGT_Buffer;
-}
-
-uint64 Buffer::GetResourceSize() const
+uint64 Buffer::GetSize() const
 {
     return m_Buf.length;
 }

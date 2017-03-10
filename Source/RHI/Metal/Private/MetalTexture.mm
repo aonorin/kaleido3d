@@ -91,17 +91,17 @@ void Texture::UnMap()
     
 }
 
-uint64 Texture::GetResourceLocation() const
+uint64 Texture::GetLocation() const
 {
     return 0;
 }
 
-rhi::ResourceDesc Texture::GetResourceDesc() const
+rhi::ResourceDesc Texture::GetDesc() const
 {
     return m_Desc;
 }
 
-uint64 Texture::GetResourceSize() const
+uint64 Texture::GetSize() const
 {
     return 0;
 }

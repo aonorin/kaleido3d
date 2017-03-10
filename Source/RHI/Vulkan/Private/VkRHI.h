@@ -23,6 +23,7 @@ namespace k3d
 K3D_VK_BEGIN
 
 class Device;
+using VkDeviceRef = SharedPtr<Device>;
 using RefDevice = std::shared_ptr<Device>;
 
 class ResourceManager;
@@ -82,9 +83,12 @@ using DescriptorSetLayoutRef = SharedPtr<DescriptorSetLayout>;
 class DescriptorSet;
 using DescriptorSetRef = SharedPtr<DescriptorSet>;
 
+class RenderViewport;
+using RenderViewportSp = SharedPtr<RenderViewport>;
+
 typedef std::map<rhi::PipelineLayoutKey, rhi::PipelineLayoutRef> MapPipelineLayout;
-typedef std::map<uint32, DescriptorSetLayoutRef>			MapDescriptorSetLayout;
-typedef std::map<uint32, DescriptorAllocRef>				MapDescriptorAlloc;
+typedef std::unordered_map<uint32, DescriptorSetLayoutRef>			MapDescriptorSetLayout;
+typedef std::unordered_map<uint32, DescriptorAllocRef>				MapDescriptorAlloc;
 
 struct RHIRoot
 {
@@ -95,39 +99,42 @@ struct RHIRoot
 	static GpuRef		GetHostGpuById(uint32 id);
 	static VkInstance	GetInstance();
 
-	static rhi::DeviceRef	GetDeviceById(uint32 id);
-	static void				AddViewport(RenderViewport *);
-	static RenderViewport *	GetViewport(int index);
+	static rhi::DeviceRef		GetDeviceById(uint32 id);
+	static void					AddViewport(RenderViewportSp);
+	static RenderViewportSp		GetViewport(int index);
 
 private:
-	static InstanceRef	s_InstanceRef;
-	static RenderViewport* s_Vp;
+	static InstanceRef				s_InstanceRef;
+	static DynArray<GpuRef>			s_GpuRefs;
+	static DynArray<rhi::DeviceRef> s_DeviceRefs;
+	static RenderViewportSp			s_Vp;
 	
 	static void			EnumLayersAndExts();
 	friend class		Device;
 };
 
-class DeviceAdapter : public rhi::IDeviceAdapter
-{
-	friend class Device;
-public:
-	typedef SharedPtr<DeviceAdapter> Ptr;
-	explicit DeviceAdapter(GpuRef const& gpu);
-	~DeviceAdapter() override;
-	rhi::DeviceRef 		GetDevice() override;
-private:
-	GpuRef				m_Gpu;
-	rhi::DeviceRef		m_pDevice;
-};
+//class DeviceAdapter : public rhi::IDeviceAdapter
+//{
+//	friend class Device;
+//public:
+//	typedef SharedPtr<DeviceAdapter> Ptr;
+//	explicit DeviceAdapter(GpuRef const& gpu);
+//	~DeviceAdapter() override;
+//	rhi::DeviceRef 		GetDevice() override;
+//private:
+//	GpuRef				m_Gpu;
+//	rhi::DeviceRef		m_pDevice;
+//};
 
-class Device : public rhi::IDevice
+class Device : public rhi::IDevice, public k3d::EnableSharedFromThis<Device>
 {
 public:
-	typedef Device * Ptr;
+	typedef k3d::SharedPtr<Device> Ptr;
 
 								Device();
 								~Device() override;
 	Result						Create(rhi::IDeviceAdapter *, bool withDebug) override;
+	Result						Create(GpuRef const& gpu, bool withDebug);
 	void						Destroy();
 
 	rhi::CommandContextRef		NewCommandContext(rhi::ECommandType)override;
@@ -146,13 +153,13 @@ public:
 	rhi::SyncFenceRef			NewFence()override;
 	rhi::IDescriptorPool *		NewDescriptorPool() override;
 	rhi::RenderViewportRef		NewRenderViewport(void * winHandle, rhi::GfxSetting&) override;
-	void						QueryTextureSubResourceLayout(rhi::GpuResourceRef, rhi::TextureResourceSpec const& spec, rhi::SubResourceLayout *) override;
+	void						QueryTextureSubResourceLayout(rhi::TextureRef, rhi::TextureResourceSpec const& spec, rhi::SubResourceLayout *) override;
 	SwapChainRef				NewSwapChain(rhi::GfxSetting const& setting);
 
 	SpCmdQueue const&			GetDefaultCmdQueue() const { return m_DefCmdQueue; }
 
 	VkDevice const&				GetRawDevice() const { return m_Device; }
-	PtrResManager const &		GetMemoryManager() const { return m_ResourceManager; }
+	//PtrResManager const &		GetMemoryManager() const { return m_ResourceManager; }
 
 	PtrCmdAlloc					NewCommandAllocator(bool transient);
 	bool						FindMemoryType(uint32 typeBits, VkFlags requirementsMask, uint32 *typeIndex) const;
@@ -173,13 +180,13 @@ protected:
 
 private:
 	CmdBufManagerRef						m_CmdBufManager;
-	PtrResManager							m_ResourceManager;
-	std::unique_ptr<CommandContextPool>		m_ContextPool;
+	//PtrResManager							m_ResourceManager;
+	//std::unique_ptr<CommandContextPool>		m_ContextPool;
 	std::vector<SpRenderpass>				m_PendingPass;
 
-	MapPipelineLayout						m_CachedPipelineLayout;
-	MapDescriptorAlloc						m_CachedDescriptorPool;
-	MapDescriptorSetLayout					m_CachedDescriptorSetLayout;
+	//MapPipelineLayout						m_CachedPipelineLayout;
+	//MapDescriptorAlloc						m_CachedDescriptorPool;
+	//MapDescriptorSetLayout					m_CachedDescriptorSetLayout;
 
 private:
 	VkPhysicalDeviceMemoryProperties		m_MemoryProperties = {};
@@ -194,8 +201,8 @@ private:
 class DeviceChild
 {
 public:
-	explicit					DeviceChild(Device *pDevice) : m_pDevice(pDevice) {}
-	virtual						~DeviceChild() {}
+	explicit					DeviceChild(Device::Ptr pDevice) : m_pDevice(pDevice) {}
+	virtual						~DeviceChild() { }
 
 	VkDevice const &			GetRawDevice() const { return m_pDevice->GetRawDevice(); }
 	GpuRef						GetGpuRef() const { return m_pDevice->m_Gpu; }
@@ -207,6 +214,25 @@ private:
 	Device::Ptr					m_pDevice;
 };
 
+template <class TVkObj, class TRHIObj>
+class TVkRHIObjectBase : public RHIRoot, public TRHIObj
+{
+public:
+	using ThisObj		= TVkRHIObjectBase<TVkObj, TRHIObj>;
+
+	explicit			TVkRHIObjectBase(VkDeviceRef const& refDevice)
+						: m_Device(refDevice), m_NativeObj(VK_NULL_HANDLE) {}
+
+	virtual				~TVkRHIObjectBase() {}
+
+	TVkObj				NativeHandle() const { return m_NativeObj; }
+	VkDevice			NativeDevice() const { return m_Device->GetRawDevice(); }
+
+protected:
+	SharedPtr<Device>	m_Device;
+	TVkObj				m_NativeObj;
+};
+
 #define DEVICE_CHILD_CONSTRUCT(className) \
 	explicit className(Device::Ptr ptr) : DeviceChild(ptr) {}
 #define DEVICE_CHILD_CONSTRUCT_DECLARE(className) \
@@ -215,25 +241,25 @@ private:
 /**
  * Fences are signaled by the system when work invoked by vkQueueSubmit completes.
  */
-class Fence : public rhi::ISyncFence, public DeviceChild
+class Fence : public TVkRHIObjectBase<VkFence, rhi::ISyncFence>
 {
 public:
 	Fence(Device::Ptr pDevice, VkFenceCreateInfo const & info = FenceCreateInfo::Create())
-		: DeviceChild(pDevice)
+		: ThisObj(pDevice)
 	{
 		if (pDevice) 
 		{
-			K3D_VK_VERIFY(vkCreateFence(GetRawDevice(), &info, nullptr, &m_Fence));
+			K3D_VK_VERIFY(vkCreateFence(NativeDevice(), &info, nullptr, &m_NativeObj));
 		}
 	}
 
 	~Fence() override 
 	{
-		if (m_Fence)
+		if (m_NativeObj)
 		{
-			vkDestroyFence(GetRawDevice(), m_Fence, nullptr);
-			VKLOG(Info, "Fence Destroyed. -- %0x.", m_Fence);
-			m_Fence = VK_NULL_HANDLE;
+			vkDestroyFence(NativeDevice(), m_NativeObj, nullptr);
+			VKLOG(Info, "Fence Destroyed. -- %0x.", m_NativeObj);
+			m_NativeObj = VK_NULL_HANDLE;
 		}
 	}
 
@@ -241,19 +267,31 @@ public:
 
 	bool IsSignaled()
 	{
-		return VK_SUCCESS== vkGetFenceStatus(GetRawDevice(), m_Fence);
+		return VK_SUCCESS== vkGetFenceStatus(NativeDevice(), m_NativeObj);
 	}
 
-	void Reset() override { vkResetFences(GetRawDevice(), 1, &m_Fence); }
+	void Reset() override { vkResetFences(NativeDevice(), 1, &m_NativeObj); }
+
 	void WaitFor(uint64 time) override 
 	{
-		vkWaitForFences(GetRawDevice(), 1, &m_Fence, VK_TRUE, time);
+		vkWaitForFences(NativeDevice(), 1, &m_NativeObj, VK_TRUE, time);
 	}
+
 private:
 	friend class SwapChain;
 	friend class CommandContext;
+};
 
-	VkFence m_Fence = VK_NULL_HANDLE;
+class Sampler : public TVkRHIObjectBase<VkSampler, rhi::ISampler>
+{
+public:
+	explicit Sampler(Device::Ptr pDevice, rhi::SamplerState const & sampleDesc);
+	~Sampler() override;
+	rhi::SamplerState	GetSamplerDesc() const;
+
+protected:
+	VkSamplerCreateInfo m_SamplerCreateInfo = {};
+	rhi::SamplerState   m_SamplerState;
 };
 
 /**
@@ -347,8 +385,8 @@ public:
 
 	Resource::Ptr				Map(uint64 offset, uint64 size) override;
 	void						UnMap() override { vkUnmapMemory(GetRawDevice(), m_DeviceMem); }
-	uint64						GetResourceSize() const override { return m_Size; }
-	rhi::ResourceDesc			GetResourceDesc() const override { return m_Desc; }
+	uint64						GetSize() const override { return m_Size; }
+	rhi::ResourceDesc			GetDesc() const override { return m_Desc; }
 
 protected:
 	VkMemoryAllocateInfo		m_MemAllocInfo;
@@ -362,32 +400,124 @@ protected:
 	rhi::ResourceDesc			m_Desc;
 };
 
-class Buffer : public Resource
+template <class TVkResObj, class TRHIResObj>
+class TResource : public TVkRHIObjectBase<TVkResObj, TRHIResObj>
+{
+public:
+	using ThisResourceType = TResource<TVkResObj, TRHIResObj>;
+	using TVkRHIObjectBase<TVkResObj, TRHIResObj>::m_NativeObj;
+	using TVkRHIObjectBase<TVkResObj, TRHIResObj>::NativeDevice;
+	using TVkRHIObjectBase<TVkResObj, TRHIResObj>::m_Device;
+
+	explicit TResource(VkDeviceRef const & refDevice) 
+		: TVkRHIObjectBase<TVkResObj, TRHIResObj>(refDevice)
+		, m_MemAllocInfo{}
+		, m_HostMemAddr(nullptr)
+		, m_DeviceMem{ VK_NULL_HANDLE }
+		, m_ResView(VK_NULL_HANDLE)
+		, m_ResDesc{}
+	{}
+
+	TResource(VkDeviceRef const & refDevice, rhi::ResourceDesc const &desc)
+		: TVkRHIObjectBase<TVkResObj, TRHIResObj>(refDevice)
+		, m_MemAllocInfo{}
+		, m_HostMemAddr(nullptr)
+		, m_DeviceMem{}
+		, m_ResView(VK_NULL_HANDLE)
+		, m_ResDesc(desc)
+	{}
+
+	virtual ~TResource() 
+	{
+		if (VK_NULL_HANDLE != m_ResView)
+		{
+			ResTrait<TVkResObj>::DestroyView(NativeDevice(), m_ResView, nullptr);
+			VKLOG(Info, "TResourceView Destroying.. -- %p.", m_ResView);
+			m_ResView = VK_NULL_HANDLE;
+		}
+		if (VK_NULL_HANDLE != m_NativeObj)
+		{
+			VKLOG(Info, "TResource Destroying.. -- %p.", m_NativeObj);
+			ResTrait<TVkResObj>::Destroy(NativeDevice(), m_NativeObj, nullptr);
+			m_NativeObj = VK_NULL_HANDLE;
+		}
+		if (VK_NULL_HANDLE != m_DeviceMem)
+		{
+			VKLOG(Info, "TResource Freeing Memory. -- 0x%0x, tid:%d", m_DeviceMem, Os::Thread::GetId());
+			vkFreeMemory(NativeDevice(), m_DeviceMem, nullptr);
+			m_DeviceMem = VK_NULL_HANDLE;
+		}
+	}
+
+	void* Map(uint64 offset, uint64 size) 
+	{
+		K3D_VK_VERIFY(vkMapMemory(NativeDevice(), m_DeviceMem, offset, size, 0, &m_HostMemAddr));
+		return m_HostMemAddr;
+	}
+	
+	void UnMap()
+	{
+		vkUnmapMemory(NativeDevice(), m_DeviceMem);
+	}
+
+protected:
+	typedef typename ResTrait<TVkResObj>::CreateInfo		CreateInfo;
+	typedef typename ResTrait<TVkResObj>::View				ResourceView;
+	typedef typename ResTrait<TVkResObj>::DescriptorInfo	ResourceDescriptorInfo;
+	typedef typename ResTrait<TVkResObj>::UsageFlags		ResourceUsageFlags;
+
+	VkMemoryAllocateInfo		m_MemAllocInfo;
+	VkMemoryRequirements		m_MemReq;
+	VkDeviceMemory				m_DeviceMem;
+	VkMemoryPropertyFlags		m_MemoryBits = 0;
+	void*						m_HostMemAddr;
+	ResourceView 				m_ResView;
+	ResourceUsageFlags			m_ResUsageFlags = 0;
+	ResourceDescriptorInfo		m_ResDescInfo{};
+	rhi::ResourceDesc			m_ResDesc;
+
+protected:
+
+	void Allocate(CreateInfo const& info)
+	{
+		K3D_VK_VERIFY(ResTrait<TVkResObj>::Create(NativeDevice(), &info, nullptr, &m_NativeObj));
+		m_MemAllocInfo = {};
+		m_MemAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		ResTrait<TVkResObj>::GetMemoryInfo(NativeDevice(), m_NativeObj, &m_MemReq);
+
+		m_MemAllocInfo.allocationSize = m_MemReq.size;
+		m_Device->FindMemoryType(m_MemReq.memoryTypeBits, m_MemoryBits, &m_MemAllocInfo.memoryTypeIndex);
+		K3D_VK_VERIFY(vkAllocateMemory(NativeDevice(), &m_MemAllocInfo, nullptr, &m_DeviceMem));
+		m_MemAllocInfo.allocationSize;
+
+		/*K3D_VK_VERIFY(vkBindBufferMemory(NativeDevice(), m_Buffer, m_DeviceMem, m_AllocationOffset));*/
+	}
+};
+
+class Buffer : public TResource<VkBuffer, rhi::IGpuResource>
 {
 public:
 	typedef Buffer * Ptr;
-	explicit					Buffer(Device::Ptr pDevice) : Resource(pDevice) {}
+	explicit					Buffer(Device::Ptr pDevice) : ThisResourceType(pDevice) {}
 								Buffer(Device::Ptr pDevice, rhi::ResourceDesc const & desc);
 	virtual						~Buffer();
 
 	void						Create(size_t size);
 
-	uint64						GetResourceLocation() const override	{ return (uint64)m_Buffer; }
-	rhi::EGpuResourceType		GetResourceType() const override		{ return rhi::EGT_Buffer; }
-private:
-	VkDescriptorBufferInfo		m_BufferInfo;
-	VkBufferView				m_BufferView = VK_NULL_HANDLE;
-	VkBuffer					m_Buffer = VK_NULL_HANDLE;
-	VkBufferUsageFlags  		m_Usage = 0;
-	VkMemoryPropertyFlags		m_MemoryBits = 0;
+	uint64						GetLocation() const override	{ return (uint64)m_NativeObj; }
+	uint64						GetSize() const override { return m_MemAllocInfo.allocationSize; }
+	rhi::ResourceDesc			GetDesc() const override { return m_ResDesc; }
+
+	void*						Map(uint64 offset, uint64 size) override { return ThisResourceType::Map(offset, size); }
+	void						UnMap() override { return ThisResourceType::UnMap(); }
 };
 
-class Texture : public rhi::ITexture, public Resource
+class Texture : public TResource<VkImage, rhi::ITexture>
 {
 public:
 	typedef ::k3d::SharedPtr<Texture> TextureRef;
 
-	explicit					Texture(Device::Ptr pDevice) : Resource(pDevice) {}
+	explicit					Texture(Device::Ptr pDevice) : ThisResourceType(pDevice) {}
 								Texture(Device::Ptr pDevice, rhi::ResourceDesc const&);
 								Texture(VkImage image, VkImageView imageView, VkImageViewCreateInfo info, Device::Ptr pDevice, bool selfOwnShip = true);
 								~Texture() override;
@@ -395,13 +525,17 @@ public:
 	static TextureRef			CreateFromSwapChain(VkImage image, VkImageView view, VkImageViewCreateInfo info, Device::Ptr pDevice);
 	
 	const VkImageViewCreateInfo&GetViewInfo() const { return m_ImageViewInfo; }
-	const VkImageView &			GetView() const { return m_ImageView; }
-	const VkImage&				Get() const { return m_Image; }
+	const VkImageView &			GetView() const { return m_ResView; }
+	const VkImage&				Get() const { return m_NativeObj; }
 	VkImageLayout				GetImageLayout() const { return m_ImageLayout; }
 	VkImageSubresourceRange		GetSubResourceRange() const { return m_SubResRange; }
 
-	uint64						GetResourceLocation() const override { return (uint64)m_Image; }
-	rhi::EResourceState			GetUsageState() const override { return m_UsageState; }
+	uint64						GetLocation() const override { return (uint64)m_NativeObj; }
+	uint64						GetSize() const override { return m_MemAllocInfo.allocationSize; }
+	rhi::EResourceState			GetState() const override { return m_UsageState; }
+	rhi::ResourceDesc			GetDesc() const override { return m_ResDesc; }
+	void*						Map(uint64 offset, uint64 size) override { return ThisResourceType::Map(offset, size); }
+	void						UnMap() override { return ThisResourceType::UnMap(); }
 
 	void						BindSampler(rhi::SamplerRef sampler) override;
 	rhi::SamplerCRef			GetSampler() const override;
@@ -427,14 +561,13 @@ private:
 	::k3d::SharedPtr<Sampler>	m_ImageSampler;
 	VkImageViewCreateInfo		m_ImageViewInfo = {};
 	rhi::ShaderResourceViewRef	m_SRV;
-	VkImageView					m_ImageView = VK_NULL_HANDLE;
+	//VkImageView					m_ImageView = VK_NULL_HANDLE;
 	ImageInfo  					m_ImageInfo;
-	VkImage						m_Image = VK_NULL_HANDLE;
+	//VkImage						m_Image = VK_NULL_HANDLE;
 	rhi::EResourceState			m_UsageState = rhi::ERS_Unknown;
 	VkImageLayout				m_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VkImageMemoryBarrier		m_Barrier;
-	VkImageUsageFlags			m_ImageUsage = 0;
-	VkMemoryPropertyFlags		m_MemoryBits = 0;
+
 	VkSubresourceLayout			m_SubResourceLayout = {};
 	VkImageSubresourceRange     m_SubResRange = {};
 	bool						m_SelfOwn = true;
@@ -661,10 +794,10 @@ private:
 	void					InitCommandBufferPool();
 };
 
-class CommandQueue : public DeviceChild
+class CommandQueue
 {
 public:
-			CommandQueue(Device::Ptr pDevice, VkQueueFlags queueTypes, uint32 queueFamilyIndex, uint32 queueIndex);
+			CommandQueue(VkDevice pDevice, VkQueueFlags queueTypes, uint32 queueFamilyIndex, uint32 queueIndex);
 	virtual ~CommandQueue();
 
 	void Submit(
@@ -685,6 +818,7 @@ protected:
 	void Destroy();
 
 private:
+	VkDevice		m_Device = VK_NULL_HANDLE;
 	VkQueue			m_Queue = VK_NULL_HANDLE;
 	VkQueueFlags	m_QueueTypes = 0;
 	uint32			m_QueueFamilyIndex = UINT32_MAX;
@@ -864,7 +998,7 @@ private:
 class PipelineStateObject : public rhi::IPipelineStateObject, public DeviceChild
 {
 public:
-	explicit 							PipelineStateObject(Device* pDevice);
+	explicit 							PipelineStateObject(Device::Ptr pDevice);
 										PipelineStateObject(Device::Ptr pDevice, rhi::PipelineDesc const& desc, PipelineLayout * ppl);
 	virtual								~PipelineStateObject();
 
@@ -922,28 +1056,27 @@ private:
 	PipelineLayout *								m_PipelineLayout;
 };
 
-class ShaderResourceView : public rhi::IShaderResourceView
+class ShaderResourceView : public TVkRHIObjectBase<VkImageView, rhi::IShaderResourceView>
 {
 public:
-	ShaderResourceView(rhi::ResourceViewDesc const &desc, rhi::GpuResourceRef gpuResource);
-	~ShaderResourceView();
-	rhi::GpuResourceRef		GetResource() const override { return m_Resource; }
+	ShaderResourceView(Device::Ptr pDevice, rhi::ResourceViewDesc const &desc, rhi::GpuResourceRef gpuResource);
+	~ShaderResourceView() override;
+	rhi::GpuResourceRef		GetResource() const override { return rhi::GpuResourceRef(m_WeakResource); }
 	rhi::ResourceViewDesc	GetDesc() const override { return m_Desc; }
-	VkImageView				NativeImageView() const { return m_TextureView; }
+	VkImageView				NativeImageView() const { return m_NativeObj; }
 private:
-	rhi::GpuResourceRef		m_Resource;
+	//rhi::GpuResourceRef		m_Resource;
+	WeakPtr<rhi::IGpuResource> m_WeakResource;
 	rhi::ResourceViewDesc	m_Desc;
 	VkImageViewCreateInfo	m_TextureViewInfo;
-	VkImageView				m_TextureView;
 };
 
-class PipelineLayout : public rhi::IPipelineLayout, public DeviceChild
+class PipelineLayout : public TVkRHIObjectBase<VkPipelineLayout, rhi::IPipelineLayout>
 {
 public:
 	PipelineLayout(Device::Ptr pDevice, rhi::PipelineLayoutDesc const &desc);
-	~PipelineLayout()override;
+	~PipelineLayout() override;
 
-	VkPipelineLayout	GetNativeLayout() const			{ return m_PipelineLayout; }
 	VkDescriptorSet		GetNativeDescriptorSet() const	{ return static_cast<DescriptorSet*>(m_DescSet.Get())->GetNativeHandle(); }
 
 	rhi::DescriptorRef	GetDescriptorSet()const override{ return m_DescSet; }
@@ -955,20 +1088,6 @@ protected:
 private:
 	rhi::DescriptorRef		m_DescSet;
 	DescriptorSetLayoutRef	m_DescSetLayout;
-	VkPipelineLayout		m_PipelineLayout;
-};
-
-class Sampler : public rhi::ISampler, public DeviceChild
-{
-public:
-	explicit			Sampler(Device::Ptr pDevice, rhi::SamplerState const & sampleDesc);
-						~Sampler() override;
-	rhi::SamplerState	GetSamplerDesc() const;
-	VkSampler			NativePtr() const { return m_Sampler; }
-protected:
-	VkSampler 			m_Sampler = VK_NULL_HANDLE;
-	VkSamplerCreateInfo m_SamplerCreateInfo = {};
-	rhi::SamplerState   m_SamplerState;
 };
 
 K3D_VK_END

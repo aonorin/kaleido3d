@@ -5,6 +5,10 @@
 #include <Core/Os.h>
 
 #include <set>
+#include <map>
+
+using namespace rhi::shc;
+using namespace std;
 
 K3D_VK_BEGIN
 
@@ -23,7 +27,7 @@ PipelineStateObject::PipelineStateObject(Device::Ptr pDevice, rhi::PipelineDesc 
 /**
  * @class	PipelineStateObject
  */
-PipelineStateObject::PipelineStateObject(Device* pDevice)
+PipelineStateObject::PipelineStateObject(Device::Ptr pDevice)
 	: DeviceChild(pDevice)
 	, m_Pipeline(VK_NULL_HANDLE)
 	, m_PipelineCache(VK_NULL_HANDLE)
@@ -359,7 +363,7 @@ void PipelineStateObject::InitWithDesc(rhi::PipelineDesc const & desc)
 	m_RenderPass = RHIRoot::GetViewport(0)->GetRenderPass();
 
 	this->m_GfxCreateInfo.renderPass = m_RenderPass;
-	this->m_GfxCreateInfo.layout = m_PipelineLayout->m_PipelineLayout;
+	this->m_GfxCreateInfo.layout = m_PipelineLayout->NativeHandle();
 
 	// Finalize
 	Finalize();
@@ -386,6 +390,84 @@ void PipelineStateObject::Destroy()
 		VKLOG(Info, "PipelineStateObject  Destroyed.. -- %0x.", m_Pipeline);
 		m_Pipeline = VK_NULL_HANDLE;
 	}
+}
+
+PipelineLayout::PipelineLayout(Device::Ptr pDevice, rhi::PipelineLayoutDesc const & desc)
+	: PipelineLayout::ThisObj(pDevice)
+	, m_DescSetLayout(nullptr)
+	, m_DescSet()
+{
+	InitWithDesc(desc);
+}
+
+PipelineLayout::~PipelineLayout()
+{
+	Destroy();
+}
+
+void PipelineLayout::Destroy()
+{
+	if (m_NativeObj == VK_NULL_HANDLE)
+		return;
+	vkDestroyPipelineLayout(NativeDevice(), m_NativeObj, nullptr);
+	VKLOG(Info, "PipelineLayout Destroyed . -- %0x.", m_NativeObj);
+	m_NativeObj = VK_NULL_HANDLE;
+}
+
+uint64 BindingHash(Binding const& binding)
+{
+	return (uint64)(1 << (3 + binding.VarNumber)) | binding.VarStage;
+}
+
+bool operator<(Binding const &lhs, Binding const &rhs)
+{
+	return rhs.VarStage < lhs.VarStage && rhs.VarNumber < lhs.VarNumber;
+}
+
+BindingArray ExtractBindingsFromTable(::k3d::DynArray<Binding> const& bindings)
+{
+	//	merge image sampler
+	std::map<uint64, Binding> bindingMap;
+	for (auto const & binding : bindings)
+	{
+		uint64 hash = BindingHash(binding);
+		if (bindingMap.find(hash) == bindingMap.end())
+		{
+			bindingMap.insert({ hash, binding });
+		}
+		else // binding slot override
+		{
+			auto & overrideBinding = bindingMap[hash];
+			if (EBindType((uint32)overrideBinding.VarType | (uint32)binding.VarType)
+				== EBindType::ESamplerImageCombine)
+			{
+				overrideBinding.VarType = EBindType::ESamplerImageCombine;
+			}
+		}
+	}
+
+	BindingArray array;
+	for (auto & p : bindingMap)
+	{
+		array.Append(RHIBinding2VkBinding(p.second));
+	}
+	return array;
+}
+
+void PipelineLayout::InitWithDesc(rhi::PipelineLayoutDesc const & desc)
+{
+	DescriptorAllocator::Options options;
+	BindingArray array = ExtractBindingsFromTable(desc.Bindings);
+	auto alloc = m_Device->NewDescriptorAllocator(16, array);
+	m_DescSetLayout = m_Device->NewDescriptorSetLayout(array);
+	m_DescSet = rhi::DescriptorRef(DescriptorSet::CreateDescSet(alloc, m_DescSetLayout->GetNativeHandle(), array, m_Device));
+
+	VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = {};
+	pPipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pPipelineLayoutCreateInfo.pNext = NULL;
+	pPipelineLayoutCreateInfo.setLayoutCount = 1;
+	pPipelineLayoutCreateInfo.pSetLayouts = &m_DescSetLayout->m_DescriptorSetLayout;
+	K3D_VK_VERIFY(vkCreatePipelineLayout(NativeDevice(), &pPipelineLayoutCreateInfo, nullptr, &m_NativeObj));
 }
 
 K3D_VK_END

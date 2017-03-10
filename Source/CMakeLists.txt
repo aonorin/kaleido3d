@@ -24,6 +24,7 @@ option(BUILD_WITH_EDITOR "Build With Editor" OFF)
 option(BUILD_WITH_D3D12 "Build With D3D12 RHI" OFF)
 option(BUILD_WITH_V8 "Build With V8 Script Module" OFF)
 option(BUILD_WITH_UNIT_TEST "Build With Unit Test" ON)
+option(ENABLE_SHAREDPTR_TRACK "Enable SharedPtr Track" ON)
 
 if(IOS OR MACOS)
 	set(LIB_DIR @loader_path/../Frameworks)
@@ -42,6 +43,10 @@ if(BUILD_SHARED)
 else()
 	add_definitions(-DBUILD_STATIC_PLUGIN=1)
 	message("----- All runtime lib will be built as static library. \n\t${Yellow}BUILD_STATIC_PLUGIN=1${ColourReset}")
+endif()
+
+if(ENABLE_SHAREDPTR_TRACK)
+	add_definitions(-DENABLE_SHAREDPTR_TRACKER=1)
 endif()
 
 message(STATUS "compiler is ${CMAKE_CXX_COMPILER_ID}" ) 

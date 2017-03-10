@@ -21,7 +21,9 @@ namespace vk
 {
 
 InstanceRef			RHIRoot::s_InstanceRef;
-RenderViewport *	RHIRoot::s_Vp = nullptr;
+DynArray<GpuRef>	RHIRoot::s_GpuRefs;
+DynArray<rhi::DeviceRef> RHIRoot::s_DeviceRefs;
+RenderViewportSp	RHIRoot::s_Vp;
 
 void dFunc(void*)
 {
@@ -32,14 +34,18 @@ void RHIRoot::Initialize(const char * appName, bool debug)
 {
 	// create instance
 	s_InstanceRef = InstanceRef(new vk::Instance(appName, appName, debug));
+	s_GpuRefs = s_InstanceRef->EnumGpus();
+	for (auto & gpu : s_GpuRefs)
+	{
+		auto pDevice = new Device;
+		pDevice->Create(gpu->SharedFromThis(), s_InstanceRef->WithValidation());
+		s_DeviceRefs.Append(rhi::DeviceRef( pDevice ));
+	}
 }
 
 void RHIRoot::Destroy()
 {
-	if (s_InstanceRef)
-	{
-		s_InstanceRef->~Instance();
-	}
+	VKLOG(Info, "RHIRoot::Destroy");
 }
 
 void RHIRoot::SetupDebug(VkDebugReportFlagsEXT flags, PFN_vkDebugReportCallbackEXT callBack)
@@ -52,16 +58,12 @@ void RHIRoot::SetupDebug(VkDebugReportFlagsEXT flags, PFN_vkDebugReportCallbackE
 
 uint32 RHIRoot::GetHostGpuCount()
 {
-	if (s_InstanceRef)
-	{
-		return s_InstanceRef->GetHostGpuCount();
-	}
-	return 0;
+	return s_GpuRefs.Count();
 }
 
 GpuRef RHIRoot::GetHostGpuById(uint32 id)
 {
-	return s_InstanceRef->GetHostGpuByIndex(id);
+	return s_GpuRefs[id];
 }
 
 VkInstance RHIRoot::GetInstance()
@@ -71,15 +73,16 @@ VkInstance RHIRoot::GetInstance()
 
 rhi::DeviceRef RHIRoot::GetDeviceById(uint32 id)
 {
-	return s_InstanceRef ? s_InstanceRef->GetDeviceByIndex(id): nullptr;
+	return s_DeviceRefs[id];
 }
 
-void RHIRoot::AddViewport(RenderViewport * vp)
+void RHIRoot::AddViewport(RenderViewportSp vp)
 {
 	s_Vp = vp;
 }
 
-RenderViewport * RHIRoot::GetViewport(int index)
+RenderViewportSp 
+RHIRoot::GetViewport(int index)
 {
 	return s_Vp;
 }
@@ -122,9 +125,10 @@ static const char* LIBVULKAN = "libvulkan.so";
 class VkRHI : public IVkRHI
 {
 public:
-	VkRHI() : m_VkLib(LIBVULKAN) {}
+	VkRHI()/* : m_VkLib(LIBVULKAN) */{}
 	~VkRHI() override 
 	{
+		VKLOG(Info, "Destroying..");
 		Shutdown();
 	}
 
@@ -173,7 +177,7 @@ public:
 	const char * Name() { return "RHI_Vulkan"; }
 
 private:
-	dynlib::Lib				m_VkLib;
+	//dynlib::Lib				m_VkLib;
 
 	bool					m_IsInitialized = false;
 	uint32					m_DeviceCount = 0;

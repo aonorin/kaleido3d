@@ -21,7 +21,7 @@ namespace k3d
 #endif
 		va_end(va);
 
-		k3d::ILogModule* logModule = (k3d::ILogModule*)GlobalModuleManager.FindModule("KawaLog");
+		auto logModule = StaticPointerCast<k3d::ILogModule>(GlobalModuleManager.FindModule("KawaLog"));
 		if (logModule)
 		{
 			int logType = (int)ELoggerType::EConsole;

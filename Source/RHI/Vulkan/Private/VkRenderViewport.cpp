@@ -9,7 +9,7 @@
 K3D_VK_BEGIN
 
 RenderViewport::RenderViewport(
-	Device * pDevice, 
+	Device::Ptr pDevice, 
 	void * windowHandle, 
 	rhi::GfxSetting & setting)
 	: m_NumBufferCount(-1)
@@ -25,7 +25,6 @@ RenderViewport::RenderViewport(
 			setting.Width, setting.Height, m_NumBufferCount);
 		m_PresentSemaphore = GetDevice()->NewSemaphore();
 		m_RenderSemaphore = GetDevice()->NewSemaphore();
-		RHIRoot::AddViewport(this);
 	}
 }
 

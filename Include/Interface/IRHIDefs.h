@@ -189,6 +189,12 @@ namespace rhi
 		}
 	};
 
+	struct ColorAttachmentState
+	{
+		BlendState	Blend;
+		uint32		ColorWriteMask; // z-pass
+	};
+
 	struct RasterizerState
 	{
 		enum EFillMode

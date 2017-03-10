@@ -25,6 +25,11 @@ public:
 
 private:
 
+#if K3DPLATFORM_OS_WIN || K3DPLATFORM_OS_ANDROID
+	SharedPtr<IVkRHI> m_pRHI;
+#else
+	SharedPtr<IMetalRHI> m_pRHI;
+#endif
 	rhi::DeviceRef m_TestDevice;
 };
 
@@ -37,19 +42,19 @@ bool UnitTestRHIDevice::OnInit()
 {
 	App::OnInit();
 #if K3DPLATFORM_OS_WIN || K3DPLATFORM_OS_ANDROID
-	IVkRHI* pVkRHI = (IVkRHI*)ACQUIRE_PLUGIN(RHI_Vulkan);
-	if (pVkRHI)
+	m_pRHI = StaticPointerCast<IVkRHI>(ACQUIRE_PLUGIN(RHI_Vulkan));
+	if (m_pRHI)
 	{
-		pVkRHI->Initialize("UnitTestRHIDevice", false);
-		pVkRHI->Start();
-		m_TestDevice = pVkRHI->GetPrimaryDevice();
+		m_pRHI->Initialize("UnitTestRHIDevice", false);
+		m_pRHI->Start();
+		m_TestDevice = m_pRHI->GetPrimaryDevice();
 	}
 #else
-    auto pMtlRHI = ACQUIRE_PLUGIN(RHI_Metal);
+    auto pMtlRHI = StaticPointerCast<IMetalRHI>(ACQUIRE_PLUGIN(RHI_Metal));
     if(pMtlRHI)
     {
         pMtlRHI->Start();
-        m_TestDevice = ((IMetalRHI*)pMtlRHI)->GetPrimaryDevice();
+        m_TestDevice = pMtlRHI->GetPrimaryDevice();
     }
 #endif
 	return true;

@@ -615,6 +615,7 @@ namespace Os
 	Mutex::~Mutex()
 	{
 		delete m_Impl;
+		m_Impl = nullptr;
 	}
 
 	void Mutex::Lock()

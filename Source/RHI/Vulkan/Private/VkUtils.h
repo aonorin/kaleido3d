@@ -49,7 +49,11 @@ public:
 		K3D_VK_VERIFY(vkCreateSemaphore(GetRawDevice(), &info, nullptr, &m_Semaphore));
 		VKLOG(Info, "Semaphore Created. (0x%0x).", m_Semaphore);
 	}
-	~Semaphore() { vkDestroySemaphore(GetRawDevice(), m_Semaphore, nullptr); }
+	~Semaphore() 
+	{
+		VKLOG(Info, "Semaphore Destroyed. (0x%0x).", m_Semaphore);
+		vkDestroySemaphore(GetRawDevice(), m_Semaphore, nullptr); 
+	}
 
 	VkSemaphore	GetNativeHandle() const { return m_Semaphore; }
 

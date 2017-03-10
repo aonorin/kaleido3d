@@ -14,6 +14,12 @@ namespace rhi
 	typedef ::k3d::SharedPtr<IGpuResource>		GpuResourceRef;
 	struct ITexture;
 	typedef ::k3d::SharedPtr<ITexture>			TextureRef;
+	struct IBuffer;
+	typedef ::k3d::SharedPtr<IBuffer>			BufferRef;
+	struct ITextureView;
+	typedef ::k3d::SharedPtr<ITextureView>		TextureViewRef;
+	struct IBufferView;
+	typedef ::k3d::SharedPtr<IBufferView>		BufferViewRef;
 	struct IShaderResourceView;
 	typedef ::k3d::SharedPtr<IShaderResourceView>	ShaderResourceViewRef;
 	struct IPipelineStateObject;
@@ -55,20 +61,19 @@ namespace rhi
 
 	struct K3D_API IGpuResource
 	{
-		virtual					~IGpuResource() {}
+		virtual						~IGpuResource() {}
 		virtual void *				Map(uint64 start, uint64 size) = 0;
 		virtual void				UnMap() = 0;
 
-		virtual uint64				GetResourceLocation() const	{ return 0; }
-		virtual ResourceDesc		GetResourceDesc() const = 0;
+		virtual uint64				GetLocation() const	{ return 0; }
+		virtual ResourceDesc		GetDesc() const = 0;
 		
 		/**
 		 * Vulkan: texture uses image layout as resource state
 		 * D3D12: used for transition, maybe used as ShaderVisiblity determination in STATIC_SAMPLER and descriptor table 
 		 */
-		virtual EResourceState		GetUsageState() const		{ return ERS_Unknown; }
-		virtual EGpuResourceType	GetResourceType() const		{ return ResourceTypeNum; }
-		virtual uint64				GetResourceSize() const = 0;
+		virtual EResourceState		GetState() const		{ return ERS_Unknown; }
+		virtual uint64				GetSize() const = 0;
 	};
 
 	struct ISampler
@@ -76,19 +81,18 @@ namespace rhi
 		virtual SamplerState GetSamplerDesc() const = 0;
 		virtual ~ISampler() {}
 	};
-
-	struct ITexture;
-
+	
 	struct IShaderResourceView
 	{
+		virtual ~IShaderResourceView() {}
 		virtual GpuResourceRef		GetResource() const = 0;
 		virtual ResourceViewDesc	GetDesc() const = 0;
 	};
 
-	struct ITexture : virtual public IGpuResource
+	struct ITexture : public IGpuResource
 	{
-		virtual						~ITexture() {}
-		virtual SamplerCRef			GetSampler() const = 0;
+		virtual							~ITexture() {}
+		virtual SamplerCRef				GetSampler() const = 0;
 		virtual void					BindSampler(SamplerRef) = 0;
 		virtual void					SetResourceView(ShaderResourceViewRef) = 0;
 		virtual ShaderResourceViewRef 	GetResourceView() const = 0;
@@ -224,6 +228,7 @@ namespace rhi
 		};
 
 		virtual							~IDevice() {}
+		// @deprecated
 		virtual Result						Create(IDeviceAdapter *, bool withDebug) = 0;
 
 		virtual CommandContextRef			NewCommandContext(ECommandType) = 0;
@@ -241,7 +246,7 @@ namespace rhi
 		
 		/* equal with d3d12's getcopyfootprint or vulkan's getImagesubreslayout.
 		 */
-		virtual void						QueryTextureSubResourceLayout(GpuResourceRef, TextureResourceSpec const& spec, SubResourceLayout *) {}
+		virtual void						QueryTextureSubResourceLayout(TextureRef, TextureResourceSpec const& spec, SubResourceLayout *) {}
 	};
 
 	struct K3D_API IRenderViewport

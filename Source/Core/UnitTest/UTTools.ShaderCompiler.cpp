@@ -16,7 +16,7 @@ void TestShaderCompiler()
     String vertexSource((const char*)vShFile.FileData());
     vShFile.Close();
         
-	rhi::IShModule* shMod = (rhi::IShModule*)GlobalModuleManager.FindModule("ShaderCompiler");
+	auto shMod = StaticPointerCast<rhi::IShModule>(GlobalModuleManager.FindModule("ShaderCompiler"));
 	if (shMod)
 	{
 		// test compile

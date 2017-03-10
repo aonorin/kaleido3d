@@ -110,7 +110,7 @@ DescriptorSetLayout::DescriptorSetLayout(Device::Ptr pDevice, BindingArray const
 
 DescriptorSetLayout::~DescriptorSetLayout()
 {
-	Destroy();
+	//Destroy();
 }
 
 void DescriptorSetLayout::Initialize(BindingArray const & bindings)
@@ -152,24 +152,24 @@ DescriptorSet::~DescriptorSet()
 void DescriptorSet::Update(uint32 bindSet, rhi::SamplerRef pRHISampler)
 {
 	auto pSampler = StaticPointerCast<Sampler>(pRHISampler);
-	VkDescriptorImageInfo imageInfo = { pSampler->NativePtr(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	VkDescriptorImageInfo imageInfo = { pSampler->NativeHandle(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 	m_BoundDescriptorSet[bindSet].pImageInfo = &imageInfo;
 	vkUpdateDescriptorSets(GetRawDevice(), 1, &m_BoundDescriptorSet[bindSet], 0, NULL);
-	VKLOG(Info, "%s , Set (0x%0x) updated with sampler(location:0x%x).", __K3D_FUNC__, m_DescriptorSet, pSampler->NativePtr());
+	VKLOG(Info, "%s , Set (0x%0x) updated with sampler(location:0x%x).", __K3D_FUNC__, m_DescriptorSet, pSampler->NativeHandle());
 }
 
 void DescriptorSet::Update(uint32 bindSet, rhi::GpuResourceRef gpuResource)
 {
-	auto desc = gpuResource->GetResourceDesc();
+	auto desc = gpuResource->GetDesc();
 	switch(desc.Type)
 	{
 	case rhi::EGT_Buffer: 
 	{
-		VkDescriptorBufferInfo bufferInfo = { (VkBuffer)gpuResource->GetResourceLocation(), 0, gpuResource->GetResourceSize() };
+		VkDescriptorBufferInfo bufferInfo = { (VkBuffer)gpuResource->GetLocation(), 0, gpuResource->GetSize() };
 		m_BoundDescriptorSet[bindSet].pBufferInfo = &bufferInfo;
 		vkUpdateDescriptorSets(GetRawDevice(), 1, &m_BoundDescriptorSet[bindSet], 0, NULL);
 		VKLOG(Info, "%s , Set (0x%0x) updated with buffer(location:0x%x, size:%d).", __K3D_FUNC__, m_DescriptorSet,
-			gpuResource->GetResourceLocation(), gpuResource->GetResourceSize());
+			gpuResource->GetLocation(), gpuResource->GetSize());
 		break;
 	}
 	case rhi::EGT_Texture1D:
@@ -177,15 +177,15 @@ void DescriptorSet::Update(uint32 bindSet, rhi::GpuResourceRef gpuResource)
 	case rhi::EGT_Texture3D:
 	case rhi::EGT_Texture2DArray: // combined/seperated image sampler should be considered
 	{
-		auto pTex = k3d::DynamicPointerCast<Texture>(gpuResource);
+		auto pTex = k3d::StaticPointerCast<Texture>(gpuResource);
 		auto rSampler = k3d::StaticPointerCast<Sampler>(pTex->GetSampler());
 		assert(rSampler);
 		auto srv = k3d::StaticPointerCast<ShaderResourceView>(pTex->GetResourceView());
-		VkDescriptorImageInfo imageInfo = { rSampler->NativePtr(), srv->NativeImageView(), pTex->GetImageLayout() }; //TODO : sampler shouldn't be null
+		VkDescriptorImageInfo imageInfo = { rSampler->NativeHandle(), srv->NativeImageView(), pTex->GetImageLayout() }; //TODO : sampler shouldn't be null
 		m_BoundDescriptorSet[bindSet].pImageInfo = &imageInfo;
 		vkUpdateDescriptorSets(GetRawDevice(), 1, &m_BoundDescriptorSet[bindSet], 0, NULL);
 		VKLOG(Info, "%s , Set (0x%0x) updated with image(location:0x%x, size:%d).", __K3D_FUNC__, m_DescriptorSet,
-			gpuResource->GetResourceLocation(), gpuResource->GetResourceSize());
+			gpuResource->GetLocation(), gpuResource->GetSize());
 		break;
 	}
 	}

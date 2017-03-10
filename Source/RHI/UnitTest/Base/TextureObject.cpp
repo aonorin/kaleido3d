@@ -1,4 +1,6 @@
+#include <Kaleido3D.h>
 #include "TextureObject.h"
+#include <Core/LogUtil.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -14,6 +16,7 @@ TextureObject::TextureObject(rhi::DeviceRef pDevice, const uint8_t * dataInMemor
 
 TextureObject::~TextureObject()
 {
+	KLOG(Info, TextureObject, "Destroying..");
 	Destroy();
 }
 
@@ -111,11 +114,11 @@ void TextureObject::InitTexture()
 	texDesc.TextureDesc.Depth = 1;
 	m_Resource = m_pDevice->NewGpuResource(texDesc);
 
-	uint64 sz = m_Resource->GetResourceSize();
+	uint64 sz = m_Resource->GetSize();
 	void * pData = m_Resource->Map(0, sz);
 	rhi::SubResourceLayout layout = {};
 	rhi::TextureResourceSpec spec = { rhi::ETAF_COLOR,0,0 };
-	m_pDevice->QueryTextureSubResourceLayout(m_Resource, spec, &layout);
+	m_pDevice->QueryTextureSubResourceLayout(k3d::StaticPointerCast<rhi::ITexture>(m_Resource), spec, &layout);
 	if (m_width * 4 == layout.RowPitch) // directly upload
 	{
 		memcpy(pData, m_pBits, sz);

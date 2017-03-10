@@ -30,14 +30,16 @@ pause
 exit
 
 :BUILD_BY_CMAKE
-echo Now build by CMake
+echo Now Generate Project by CMake (VS 2017)
+cmake -G"Visual Studio 15 2017 Win64" -HSource -BBuild\Win64\Debug -DCMAKE_BUILD_TYPE=Debug
+if "%ERRORLEVEL%"=="0" (goto BUILD_CMAKE)
+RD /S /Q Build
 
-if defined VS140COMNTOOLS (goto MS2015Build)
-if defined VS120COMNTOOLS (goto MS2013Build) else (goto NotSupport)
-
-:MS2015Build 
-echo Build By Visual Studio 2015
+echo Now Generate Project by CMake (VS 2015)
 cmake -G"Visual Studio 14 2015 Win64" -HSource -BBuild\Win64\Debug -DCMAKE_BUILD_TYPE=Debug
+if "%ERRORLEVEL%"=="0" (goto BUILD_CMAKE) else (goto NotSupport)
+
+:BUILD_CMAKE
 cmake --build Build\Win64\Debug --config Debug
 goto End
 

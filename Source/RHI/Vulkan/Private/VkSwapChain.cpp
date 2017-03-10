@@ -44,7 +44,7 @@ uint32 SwapChain::AcquireNextImage(PtrSemaphore presentSemaphore, PtrFence pFenc
 	uint32 imageIndex;
 	VkResult result = vkAcquireNextImageKHR(GetRawDevice(), m_SwapChain, UINT64_MAX,
 		presentSemaphore ? presentSemaphore->m_Semaphore:VK_NULL_HANDLE, 
-		pFence ? pFence->m_Fence : VK_NULL_HANDLE,
+		pFence ? pFence->NativeHandle() : VK_NULL_HANDLE,
 		&imageIndex);
 	switch (result)
 	{
@@ -174,6 +174,7 @@ void SwapChain::InitSwapChain(uint32 numBuffers, std::pair<VkFormat, VkColorSpac
 
 void SwapChain::Destroy()
 {
+	VKLOG(Info, "SwapChain Destroying..");
 	if (m_SwapChain)
 	{
 		vkDestroySwapchainKHR(GetRawDevice(), m_SwapChain, nullptr);

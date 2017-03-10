@@ -23,6 +23,63 @@ public:
 	}
 };
 
+class ESFT;
+
+class ESFTChild1
+{
+public:
+	ESFTChild1(SharedPtr<ESFT> pERoot)
+		: Root(pERoot)
+	{
+		cout << "ESFTChild1 init .." << endl;
+#if K3DPLATFORM_OS_WIN
+		OutputDebugStringA("ESFTChild1 init ..\n");
+#endif
+	}
+	~ESFTChild1()
+	{
+        cout << "ESFTChild1 release .." << endl;
+#if K3DPLATFORM_OS_WIN
+		OutputDebugStringA("ESFTChild1 release ..\n");
+#endif
+	}
+	SharedPtr<ESFT> Root;
+};
+
+class Root
+{
+public:
+	static DynArray< SharedPtr< ESFT > > root;
+	static DynArray< SharedPtr<ESFTChild1> > childrenTracker;
+};
+
+DynArray< SharedPtr< ESFT > > Root::root;
+DynArray< SharedPtr<ESFTChild1> > Root::childrenTracker;
+
+class ESFT : public EnableSharedFromThis<ESFT>
+{
+public:
+	ESFT()
+    {
+#if K3DPLATFORM_OS_WIN
+		OutputDebugStringA ("ESFT init ..\n");
+#endif
+	}
+	~ESFT()
+    {
+#if K3DPLATFORM_OS_WIN
+		OutputDebugStringA("ESFT release ..\n");
+#endif
+		cout << "ESFT release .." << endl;
+	}
+	SharedPtr<ESFTChild1> NewChild1()
+	{
+		auto child = MakeShared<ESFTChild1>(SharedFromThis());
+		Root::childrenTracker.Append(child);
+		return child;
+	}
+};
+
 void TestSharedPtr()
 {
 	SharedPtr<Os::File> spFile(new Os::File);
@@ -46,10 +103,24 @@ void TestSharedPtr()
 	auto makeShared = MakeShared<Os::File>();
 	makeShared->Open(KT("TestSharedPtr"), IOWrite);
 
+	auto esft = MakeShared<ESFT>();
+	Root::root. Append (esft);
+	{
+		auto child = esft->NewChild1();
+	}
+	auto child2 = esft->NewChild1();
 	auto refMakeShared = makeShared;
 	cout << "refMakeShared:" << refMakeShared.UseCount() << endl;
 
 	refMakeShared->Close();
+}
+
+int atexit(void)
+{
+#if K3DPLATFORM_OS_WIN
+	OutputDebugStringA("At Exit ..\n");
+#endif
+	return 0;
 }
 
 int main(int argc, char**argv)

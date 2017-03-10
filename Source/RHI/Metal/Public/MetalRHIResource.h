@@ -48,11 +48,11 @@ public:
     void *                      Map(uint64 start, uint64 size) override;
     void                        UnMap() override;
     
-    uint64                      GetResourceLocation() const override;
-    rhi::ResourceDesc           GetResourceDesc() const override;
-    rhi::EResourceState         GetUsageState() const override;
-    rhi::EGpuResourceType       GetResourceType() const	override;
-    uint64                      GetResourceSize() const override;
+    uint64                      GetLocation() const override;
+    rhi::ResourceDesc           GetDesc() const override;
+    rhi::EResourceState         GetState() const override;
+//    rhi::EGpuResourceType       GetType() const	override;
+    uint64                      GetSize() const override;
     
 private:
     NSRange             m_MapRange;
@@ -71,11 +71,11 @@ public:
     void *                      Map(uint64 start, uint64 size) override;
     void                        UnMap() override;
     
-    uint64                      GetResourceLocation() const override;
-    rhi::ResourceDesc           GetResourceDesc() const override;
-    rhi::EResourceState         GetUsageState() const override { return rhi::ERS_Unknown; }
-    rhi::EGpuResourceType       GetResourceType() const	override { return rhi::ResourceTypeNum; }
-    uint64                      GetResourceSize() const override;
+    uint64                      GetLocation() const override;
+    rhi::ResourceDesc           GetDesc() const override;
+    rhi::EResourceState         GetState() const override { return rhi::ERS_Unknown; }
+//    rhi::EGpuResourceType       GetResourceType() const	override { return rhi::ResourceTypeNum; }
+    uint64                      GetSize() const override;
     
     rhi::SamplerCRef			GetSampler() const override;
     void                        BindSampler(rhi::SamplerRef) override;
