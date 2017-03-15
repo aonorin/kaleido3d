@@ -23,7 +23,7 @@ Prerequisites
 |CI Status|[![Build status](https://ci.appveyor.com/api/projects/status/bkqv6wbtyr4538hf?svg=true)](https://ci.appveyor.com/project/TsinStudio/kaleido3d)|[![Circle CI](https://circleci.com/gh/TsinStudio/kaleido3d.svg?style=svg)](https://circleci.com/gh/TsinStudio/kaleido3d) |[![Build Status](https://travis-ci.org/TsinStudio/kaleido3d.svg?branch=master)](https://travis-ci.org/TsinStudio/kaleido3d)|
 |IDE| VS2015+ | Android Studio 2.2+| Xcode 8.1+ |
 |OS Requirements| Win10 | Android 7.+| MacOS Sierra |
-|Dependency| [ThirdParty][8]/CMake 3.4+ | [ThirdParty][8]/NDK r12+/Gradle | [ThirdParty][8]/CMake 3.4+ |
+|Dependency| [ThirdParty](https://github.com/Tomicyo/kaleido3d_dep)/CMake 3.4+ | [ThirdParty](https://github.com/Tomicyo/kaleido3d_dep)/NDK r12+/Gradle | [ThirdParty](https://github.com/Tomicyo/kaleido3d_dep)/CMake 3.4+ |
 
 ----------
 
